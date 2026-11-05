@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:engine": "python3 -m unittest discover -s engine/tests -t engine",
-    "test:e2e": "node tests/e2e/run-e2e.mjs"
+    "test:e2e": "node tests/e2e/run-e2e.mjs",
+    "check:vulns": "tsx scripts/check-vulns.ts"
   },
   "dependencies": {
     "minisearch": "7.2.0",

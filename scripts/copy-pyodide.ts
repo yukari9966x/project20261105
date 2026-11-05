@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BUILTIN_PACKAGES, PURE_WHEELS, canon } from './lib/pyodide-packages';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PYODIDE_PKG = join(ROOT, 'node_modules', 'pyodide');
@@ -21,47 +22,6 @@ const OUT_ENGINE = join(ROOT, 'public', 'engine');
 const OUT_SAMPLES = join(ROOT, 'public', 'samples');
 const CACHE = join(ROOT, '.cache', 'pyodide');
 const VENDOR = join(ROOT, 'vendor', 'pyodide');
-
-/** 엔진이 import 하는 Pyodide 내장 패키지 (의존성 포함). Pillow 는 엔진이 쓰지 않아 넣지 않는다. */
-const BUILTIN_PACKAGES = [
-  'micropip',
-  'packaging',
-  'lxml',
-  'pydantic',
-  'pydantic-core',
-  'typing-extensions',
-  'annotated-types',
-  'typing-inspection',
-];
-
-/** micropip 로 설치할 순수 Python 휠 (원본 엔진 requirements.txt 와 같은 버전). */
-const PURE_WHEELS = [
-  {
-    file: 'pypdf-6.17.0-py3-none-any.whl',
-    sha256: '5bd827266a21553b74d910e350131a6227b72f2ab4209bf372814b8195fa11c5',
-    url: 'https://files.pythonhosted.org/packages/c1/08/1e9731038124a9127e1d27848952b86fb32b2f45f8f1b94adc7f0817a6ac/pypdf-6.17.0-py3-none-any.whl',
-  },
-  {
-    file: 'python_docx-1.2.0-py3-none-any.whl',
-    sha256: '3fd478f3250fbbbfd3b94fe1e985955737c145627498896a8a6bf81f4baf66c7',
-    url: 'https://files.pythonhosted.org/packages/d0/00/1e03a4989fa5795da308cd774f05b704ace555a70f9bf9d3be057b680bcf/python_docx-1.2.0-py3-none-any.whl',
-  },
-  {
-    file: 'openpyxl-3.1.5-py2.py3-none-any.whl',
-    sha256: '5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2',
-    url: 'https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl',
-  },
-  {
-    file: 'et_xmlfile-2.0.0-py3-none-any.whl',
-    sha256: '7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa',
-    url: 'https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl',
-  },
-  {
-    file: 'defusedxml-0.7.1-py2.py3-none-any.whl',
-    sha256: 'a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61',
-    url: 'https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl',
-  },
-];
 
 const CORE_FILES = ['pyodide.mjs', 'pyodide.asm.mjs', 'pyodide.asm.wasm', 'python_stdlib.zip'];
 
@@ -99,9 +59,6 @@ const SAMPLE_PAIRS = [
     product: '산업용 기계',
   },
 ];
-
-/** PEP 503 이름 정규화 (lock 의 depends 는 pydantic_core, 키는 pydantic-core 처럼 섞여 있음) */
-const canon = (n: string) => n.toLowerCase().replace(/[-_.]+/g, '-');
 
 function sha256(buf: Buffer | Uint8Array | string): string {
   return createHash('sha256').update(buf).digest('hex');

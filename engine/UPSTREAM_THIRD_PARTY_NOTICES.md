@@ -1,5 +1,7 @@
 # 오픈소스 및 제3자 소프트웨어 고지 (`THIRD_PARTY_NOTICES.md`)
 
+> **이 파일은 원본 `kats-regulation-diff`(로컬 FastAPI 앱)의 고지문입니다.** 이 저장소의 브라우저 이식판이 실제로 쓰는 패키지와 버전은 [`requirements.txt`](requirements.txt)와 `scripts/lib/pyodide-packages.ts` 를 따르며, FastAPI·Uvicorn 등 서버 패키지는 쓰지 않습니다.
+
 버전은 `requirements.txt`(실행), `requirements-dev.txt`(개발), `requirements-ocr.txt`(선택 OCR) 기준입니다.
 **재배포가 제한되는 GPL·AGPL 계열 라이선스는 사용하지 않습니다.**
 
@@ -15,7 +17,7 @@
 | Jinja2 | 3.1.6 | BSD-3-Clause | 화면 템플릿 |
 | python-dotenv | 1.2.3 | BSD-3-Clause | `.env` 설정 읽기 |
 | HTTPX | 0.28.1 | BSD-3-Clause | LLM API 호출 |
-| pypdf | 6.17.0 | BSD-3-Clause | PDF 텍스트 추출 |
+| pypdf | 6.17.0 → **6.21.4** (브라우저 이식판, 2026-11-05 보안 업데이트: GHSA·PYSEC 32건) | BSD-3-Clause | PDF 텍스트 추출 |
 | python-docx | 1.2.0 | MIT | DOCX 읽기·보고서 생성 |
 | openpyxl | 3.1.5 | MIT | XLSX 보고서 생성 |
 | defusedxml | 0.7.1 | PSF-2.0 | DOCX·HWPX XML 안전 파싱(XXE 차단) |

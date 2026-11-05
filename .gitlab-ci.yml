@@ -14,6 +14,7 @@ pages:
     PUBLIC_SITE_URL: "$CI_PAGES_URL/"
   script:
     - npm ci
+    - npm run check:vulns # 의존성 취약점(OSV). 외부망이 막혀 있으면 경고만 하고 넘어감
     - npm run fetch-data # 서비스키는 CI/CD Variables 에서
     - npm run build # dist/ 생성 (총용량 100MB 넘으면 실패)
     - rm -rf public && cp -r dist public

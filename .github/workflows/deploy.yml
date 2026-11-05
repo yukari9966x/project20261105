@@ -44,6 +44,14 @@ jobs:
 
       - run: npm ci
 
+      # 정부 AI 실험실 GitLab 의 푸시 보안 검사(OSV-Scanner·Trivy)와 같은 공개 DB 로 미리 검사한다.
+      # 코드 변경(push·수동 실행)은 취약점이 있으면 배포하지 않고, 매일 데이터 갱신은 경고만 남기고 계속한다.
+      - name: 의존성 취약점 검사 (OSV)
+        run: npm run check:vulns
+        env:
+          VULN_CHECK_STRICT: '1'
+        continue-on-error: ${{ github.event_name == 'schedule' }}
+
       - name: Pages 설정 읽기
         id: pages
         uses: actions/configure-pages@v6

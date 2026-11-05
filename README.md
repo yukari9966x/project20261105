@@ -100,10 +100,11 @@ npm run preview
 
 | 명령 | 내용 |
 |---|---|
-| `npm test` | 단위 테스트 70건 — 한글 토크나이저·조사 처리, 의도 분류, 실제 데이터로 KS·KC·리콜 검색, 키 없음 답변, CSV·정규화, 모의 제품안전 API 수집(키 없음·성공·인증 오류 시 직전 스냅샷), 모의 OpenAI 호환 서버(도구 호출·키 전송 범위·함수 호출 미지원 대체) |
+| `npm test` | 단위 테스트 76건 — 한글 토크나이저·조사 처리, 의도 분류, 실제 데이터로 KS·KC·리콜 검색, 키 없음 답변, CSV·정규화, 모의 제품안전 API 수집(키 없음·성공·인증 오류 시 직전 스냅샷), 모의 OpenAI 호환 서버(도구 호출·키 전송 범위·함수 호출 미지원 대체), requirements.txt 와 사이트 포함 패키지 버전 일치 |
 | `npm run test:engine` | 변경체크 엔진 25건 (원본 엔진의 단위·회귀 테스트 이식 + 파이프라인·연결부) — `pip install -r engine/requirements.txt` 필요 |
 | `node scripts/smoke-pyodide.mjs --unittest` | **실제 Pyodide**에서 엔진 설치·샘플 4쌍(TXT·HWPX·PDF·DOCX) 대조·XLSX/DOCX 생성 + 엔진 테스트 25건 |
 | `npm run test:e2e` | Playwright 브라우저 종단 점검 13단계 (질문창·KC·KS·변경체크·내려받기·휴대폰 폭·콘솔 오류·외부 요청 없음) |
+| `npm run check:vulns` | 의존성 취약점 검사 — `engine/requirements.txt`·사이트에 넣는 Pyodide 패키지·`package-lock.json` 전체를 OSV 공개 DB(정부 GitLab 의 OSV-Scanner·Trivy 와 같은 GHSA·PYSEC)로 조회. **공공 GitLab 에 푸시하기 전에 실행** |
 | `python engine/scripts/evaluate.py` | 가상 규정 평가셋(정답 26사례): 규칙 엔진 단독 조항 정렬 26/26, 변경 탐지 F1 1.0, 수치·기한 13/13, 근거 유효 68/68 — 원본 v0.2와 같은 값 |
 
 > 평가셋은 원본 엔진 개발자가 만든 가상 규정이라 과적합 가능성이 있습니다(원본 TEST_REPORT와 같은 한계).
@@ -126,6 +127,7 @@ npm run preview
 - 예약: **Build → Pipeline schedules**에 매일 06:00(Asia/Seoul)
 - 경로: 기본은 상대 경로(`./`)라 Pages 도메인 규칙과 상관없이 동작합니다. 고정하려면 `BASE_PATH` 변수.
 - 실행기가 인터넷에 못 나가면 Pyodide·휠을 `vendor/pyodide/`에 넣어 커밋하면 내려받지 않습니다.
+- 정부 AI 실험실 GitLab 은 푸시할 때 보안 검사(Gitleaks·Semgrep·OSV-Scanner·Trivy·Syft)를 하고, 취약한 의존성이 있으면 푸시를 거부합니다. 푸시 전에 `npm run check:vulns` 로 같은 DB 를 미리 확인하세요. Python 패키지를 올릴 때는 `engine/requirements.txt` 와 `scripts/lib/pyodide-packages.ts` 를 함께 고칩니다(테스트가 두 곳의 버전이 같은지 확인).
 - Pages 접근 제어를 켜면 다른 사이트가 데이터 JSON을 가져갈 수 없으므로 공개로 둡니다. 총용량은 48.6MB로 기본 한도(100MB) 안입니다.
 
 ## AI 연결 (선택)
