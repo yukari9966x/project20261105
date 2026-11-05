@@ -100,10 +100,10 @@ npm run preview
 
 | 명령 | 내용 |
 |---|---|
-| `npm test` | 단위 테스트 76건 — 한글 토크나이저·조사 처리, 의도 분류, 실제 데이터로 KS·KC·리콜 검색, 키 없음 답변, CSV·정규화, 모의 제품안전 API 수집(키 없음·성공·인증 오류 시 직전 스냅샷), 모의 OpenAI 호환 서버(도구 호출·키 전송 범위·함수 호출 미지원 대체), requirements.txt 와 사이트 포함 패키지 버전 일치 |
+| `npm test` | 단위 테스트 78건 — 한글 토크나이저·조사 처리, 의도 분류, 실제 데이터로 KS·KC·리콜 검색, 키 없음 답변, CSV·정규화, 모의 제품안전 API 수집(키 없음·성공·인증 오류 시 직전 스냅샷), 모의 OpenAI 호환 서버(도구 호출·키 전송 범위·함수 호출 미지원 대체), requirements.txt 와 사이트 포함 패키지 버전 일치, GitLab 용 묶음의 상대 경로 검사 |
 | `npm run test:engine` | 변경체크 엔진 25건 (원본 엔진의 단위·회귀 테스트 이식 + 파이프라인·연결부) — `pip install -r engine/requirements.txt` 필요 |
 | `node scripts/smoke-pyodide.mjs --unittest` | **실제 Pyodide**에서 엔진 설치·샘플 4쌍(TXT·HWPX·PDF·DOCX) 대조·XLSX/DOCX 생성 + 엔진 테스트 25건 |
-| `npm run test:e2e` | Playwright 브라우저 종단 점검 13단계 (질문창·KC·KS·변경체크·내려받기·휴대폰 폭·콘솔 오류·외부 요청 없음) |
+| `npm run test:e2e` | Playwright 브라우저 종단 점검 13단계 (질문창·KC·KS·변경체크·내려받기·휴대폰 폭·콘솔 오류·외부 요청 없음). `SITE_DIR=폴더 SITE_PATH=/project20261105/` 로 GitLab 처럼 풀어 놓은 사이트를 하위 경로에서 점검 |
 | `npm run check:vulns` | 의존성 취약점 검사 — `engine/requirements.txt`·사이트에 넣는 Pyodide 패키지·`package-lock.json` 전체를 OSV 공개 DB(정부 GitLab 의 OSV-Scanner·Trivy 와 같은 GHSA·PYSEC)로 조회. **공공 GitLab 에 푸시하기 전에 실행** |
 | `python engine/scripts/evaluate.py` | 가상 규정 평가셋(정답 26사례): 규칙 엔진 단독 조항 정렬 26/26, 변경 탐지 F1 1.0, 수치·기한 13/13, 근거 유효 68/68 — 원본 v0.2와 같은 값 |
 
@@ -131,7 +131,7 @@ npm run preview
 - 처음 한 번: **Build → Pipelines → Run pipeline**(파이프라인 실행) → 브랜치 선택 → 실행. 잡 순서는 `site:download`(또는 `site:build`) → `pages`.
 - 매일 갱신: **Build → Pipeline schedules**에 매일 07:00(Asia/Seoul) — GitHub 빌드(06:00) 뒤에 받도록.
 - 서비스키(`SITE_SOURCE=build` 일 때만): **Settings → CI/CD → Variables**에 `SAFETYKOREA_AUTH_KEY` (masked·protected)
-- 경로: 상대 경로(`./`)로 빌드되어 Pages 도메인 규칙과 상관없이 동작합니다.
+- 경로: GitHub·GitLab 모두 상대 경로(`./`)로 빌드한 같은 파일이라, GitLab Pages 주소가 하위 경로(`…/project20261105/`)든 고유 도메인의 맨 위(`/`)든 그대로 열립니다. (`npm run pack-site` 가 절대 경로 빌드는 묶지 않습니다)
 - 정부 AI 실험실 GitLab 은 푸시할 때 보안 검사(Gitleaks·Semgrep·OSV-Scanner·Trivy·Syft)를 하고, 취약한 의존성이 있으면 푸시를 거부합니다. 푸시 전에 `npm run check:vulns` 로 같은 DB 를 미리 확인하세요. Python 패키지를 올릴 때는 `engine/requirements.txt` 와 `scripts/lib/pyodide-packages.ts` 를 함께 고칩니다(테스트가 두 곳의 버전이 같은지 확인).
 - Pages 접근 제어를 켜면 다른 사이트가 데이터 JSON을 가져갈 수 없으므로 공개로 둡니다. 총용량은 48.6MB로 기본 한도(100MB) 안입니다.
 
@@ -144,6 +144,8 @@ npm run preview
 | 파이프라인이 *pending/stuck*, "no active runners" | 이 프로젝트가 쓸 수 있는 실행기(runner)가 없음 | Settings → CI/CD → Runners 에서 Instance(공유) runner 켜기. 없으면 운영 측에 요청. 태그가 필요한 runner 면 job 에 `tags:` 추가 |
 | `'npm' 용어는 cmdlet…로 인식되지 않습니다` | Node.js 가 없는 Windows(PowerShell) 실행기에서 `SITE_SOURCE=build` 로 돌림 | `SITE_SOURCE` 변수를 지우고 기본 방식으로 실행 (또는 실행기에 Node.js 22 설치 후 runner 서비스 재시작) |
 | `site:download` 에서 curl 실패 | 실행기가 인터넷(github.io)에 나갈 수 없음 | 운영 측에 github.io 접속 허용 요청, 또는 빌드 결과물을 저장소에 넣어 올리는 방식으로 전환 |
+| `'curl'`(또는 `'tar'`) 용어는 cmdlet…로 인식되지 않습니다 | Windows 10 1803·Server 2019 보다 오래된 실행기 | 실행기를 최신 Windows 로 바꾸거나 운영 측에 curl·tar 설치 요청 |
+| Pages 주소에서 빈 화면·파일 404 | 2026-11-05 12시(UTC) 이전 묶음(절대 경로 빌드)을 받음 | GitHub Actions 최신 실행이 끝난 뒤 **Run pipeline** 다시 실행 |
 
 ## AI 연결 (선택)
 
@@ -207,7 +209,7 @@ npm run preview
 ├─ tests/e2e/run-e2e.mjs         # 브라우저 종단 점검
 ├─ .github/workflows/deploy.yml  # 예약 수집 + 빌드 + Pages 배포
 ├─ .gitlab-ci.yml                # 이관용(같은 단계)
-└─ vite.config.ts                # base: process.env.BASE_PATH
+└─ vite.config.ts                # base: './' (상대 경로 — 어느 Pages 주소에서도 동작)
 ```
 
 ## 오픈소스

@@ -4,6 +4,7 @@
  *   npm run build && npm run test:e2e
  *   SITE_URL=https://<계정>.github.io/<저장소>/ npm run test:e2e   # 배포된 사이트 점검
  *   SCREENSHOTS=docs/screenshots npm run test:e2e                  # 화면 캡처 저장
+ *   SITE_DIR=public SITE_PATH=/project20261105/ npm run test:e2e   # 다른 폴더를 하위 경로에 올린 것처럼 점검
  *
  * 확인: ① 질문창(키 없음 모드) ② KC·리콜 ③ KS ④ 변경체크(Pyodide 엔진 로딩 → 샘플 대조 → 근거 → XLSX/DOCX 내려받기)
  *       휴대폰 폭 레이아웃(가로 스크롤 없음) · 콘솔 오류 없음 · 외부 도메인 요청 없음(자체 호스팅)
@@ -20,6 +21,8 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // SITE_DIR=다른 폴더 — 예: GitLab 처럼 site.tar.gz 를 풀어 만든 public/ 을 그대로 점검
 const DIST = process.env.SITE_DIR ? resolve(ROOT, process.env.SITE_DIR) : join(ROOT, 'dist');
+// SITE_PATH=/하위/경로/ — 사이트를 그 경로 아래에 올린 것처럼 띄운다 (GitHub Pages·GitLab Pages 의 /<프로젝트>/). 기본은 맨 위(/)
+const PREFIX = `/${(process.env.SITE_PATH ?? '').replace(/^\/+|\/+$/g, '')}/`.replace('//', '/');
 const SHOTS = process.env.SCREENSHOTS ? join(ROOT, process.env.SCREENSHOTS) : null;
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -44,7 +47,11 @@ if (!base) {
   }
   server = createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
-    let p = join(DIST, decodeURIComponent(url.pathname));
+    if (!url.pathname.startsWith(PREFIX)) {
+      res.writeHead(404).end('not found');
+      return;
+    }
+    let p = join(DIST, decodeURIComponent(url.pathname.slice(PREFIX.length - 1)));
     if (existsSync(p) && statSync(p).isDirectory()) p = join(p, 'index.html');
     if (!p.startsWith(DIST) || !existsSync(p)) {
       res.writeHead(404).end('not found');
@@ -53,7 +60,7 @@ if (!base) {
     res.writeHead(200, { 'content-type': TYPES[extname(p)] ?? 'application/octet-stream' }).end(readFileSync(p));
   });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  base = `http://127.0.0.1:${server.address().port}/`;
+  base = `http://127.0.0.1:${server.address().port}${PREFIX}`;
 }
 const origin = new URL(base).origin;
 

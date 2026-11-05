@@ -2,8 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // 해시 라우팅(#/kc, #/diff …)이라 서버 설정 없이 어느 경로에 올려도 새로고침 404 가 나지 않는다.
-// GitHub Pages: BASE_PATH=/<저장소>/ · 공공 GitLab Pages: 인스턴스 Pages 도메인 규칙에 맞춰 BASE_PATH 지정.
-// 비워 두면 상대 경로('./')로 빌드되어 어떤 하위 경로에서도 동작한다.
+// 기본은 상대 경로('./') — 한 번 만든 빌드가 GitHub Pages(/저장소/)·공공 GitLab Pages(하위 경로·고유 도메인 맨 위)
+// 어디서나 그대로 동작한다(GitLab 은 GitHub Actions 가 만든 site.tar.gz 를 받아 씀). BASE_PATH 는 특별한 경우에만.
 const basePath = process.env.BASE_PATH || './';
 
 export default defineConfig({

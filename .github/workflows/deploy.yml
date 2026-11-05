@@ -3,7 +3,7 @@
 #  - 서비스키는 Actions Secrets 의 SAFETYKOREA_AUTH_KEY 에만 둔다(사이트에는 결과 JSON 만 올라감).
 #    키가 없거나 수집이 실패하면 직전 스냅샷(배포된 사이트의 /data/v1)을 그대로 쓴다.
 #  - 공개 저장소는 60일간 활동이 없으면 예약 실행이 자동 중지된다(Actions 탭에서 다시 켜기).
-#  - 공공 GitLab 으로 옮길 때는 .gitlab-ci.yml 의 pages 잡을 쓴다(빌드 명령은 같음).
+#  - 공공 GitLab 은 여기서 함께 올리는 site.tar.gz 를 받아 Pages 에 올린다(.gitlab-ci.yml). 그래서 상대 경로로 빌드한다.
 name: 수집·빌드·배포
 
 on:
@@ -57,19 +57,18 @@ jobs:
         uses: actions/configure-pages@v6
         continue-on-error: true
 
+      # 사이트 주소는 직전 스냅샷(배포된 /data/v1)을 이어받을 때만 쓴다. 빌드 자체는 주소와 무관한 상대 경로.
       - name: 사이트 주소 정하기
         id: site
         env:
           PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
-          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
         run: |
           OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           REPO="${GITHUB_REPOSITORY#*/}"
-          BASE_URL="${PAGES_BASE_URL:-https://${OWNER}.github.io/${REPO}}"
-          if [ -n "$PAGES_BASE_URL" ]; then BASE_PATH="$PAGES_BASE_PATH"; elif [ "$REPO" = "${OWNER}.github.io" ]; then BASE_PATH=""; else BASE_PATH="/${REPO}"; fi
+          if [ "$REPO" = "${OWNER}.github.io" ]; then DEFAULT_URL="https://${OWNER}.github.io"; else DEFAULT_URL="https://${OWNER}.github.io/${REPO}"; fi
+          BASE_URL="${PAGES_BASE_URL:-$DEFAULT_URL}"
           echo "base_url=${BASE_URL%/}/" >> "$GITHUB_OUTPUT"
-          echo "base_path=${BASE_PATH%/}/" >> "$GITHUB_OUTPUT"
-          echo "사이트: ${BASE_URL%/}/ (base ${BASE_PATH%/}/)"
+          echo "사이트: ${BASE_URL%/}/"
 
       - name: 제품안전 Open API 수집 (CI 전용)
         env:
@@ -78,9 +77,9 @@ jobs:
           SAFETY_BACKFILL_DAYS: ${{ inputs.backfill_days || '365' }}
         run: npm run fetch-data
 
+      # BASE_PATH 를 주지 않아 상대 경로('./')로 빌드한다 — GitHub Pages(/저장소/)와 공공 GitLab Pages(하위 경로·고유 도메인)가
+      # 같은 파일을 그대로 쓴다. 절대 경로로 빌드되면 아래 pack-site 가 멈춘다.
       - name: 색인 생성 · Pyodide 복사 · 빌드 · 용량 검사(100MB)
-        env:
-          BASE_PATH: ${{ steps.site.outputs.base_path }}
         run: npm run build
 
       - name: 단위 테스트 (검색·질문 분류·수집 스크립트 — 방금 만든 /data/v1 로)
