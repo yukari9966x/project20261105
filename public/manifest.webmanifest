@@ -1,0 +1,12 @@
+{
+  "name": "국가기술표준원 슈퍼앱 (경진대회 시제품)",
+  "short_name": "국표원 슈퍼앱",
+  "description": "KC 인증·리콜·KS 표준·해외규제 변경체크를 질문 하나로 — 경진대회 시제품",
+  "lang": "ko",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f8",
+  "theme_color": "#1c3d72",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

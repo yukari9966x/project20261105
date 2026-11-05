@@ -1,0 +1,76 @@
+{
+  "note": "공공데이터포털 파일데이터 원본(로그인·서비스키 불필요). '수시(1회성)' 갱신 데이터라 바뀔 때만 교체한다. 받은 날: 2026-11-05",
+  "files": [
+    {
+      "path": "data/raw/ks_standards.csv",
+      "dataset": "산업통상부 국가기술표준원_이나라표준인증_국가표준",
+      "data_go_kr_id": "15131276",
+      "url": "https://www.data.go.kr/data/15131276/fileData.do",
+      "provider": "산업통상부 국가기술표준원 (기술규제협력과)",
+      "license": "이용허락범위 제한 없음",
+      "original_file_name": "20240913 - 표준마스터(수정).csv",
+      "basis_date": "2024-09-13",
+      "portal_modified": "2025-08-28",
+      "rows": 33266,
+      "encoding": "utf-8-sig",
+      "columns": ["한국산업표준번호", "한글표준명", "최종고시상태", "국제표준인용여부"],
+      "sha256": "161198f5c58a6c80333219dd46e47875ed94198b8e92321d979fb436f49f573c"
+    },
+    {
+      "path": "data/raw/safety/recall_domestic_20230809.csv",
+      "dataset": "산업통상부_국가기술표준원_제품안전_국내리콜정보",
+      "data_go_kr_id": "15040696",
+      "url": "https://www.data.go.kr/data/15040696/fileData.do",
+      "provider": "산업통상부 국가기술표준원 (제품안전정보과)",
+      "license": "이용허락범위 제한 없음",
+      "original_file_name": "산업통상자원부_국가기술표준원_제품안전_국내리콜정보_20230809.csv",
+      "basis_date": "2023-08-09",
+      "record_date_range": ["2019-10-22", "2022-07-26"],
+      "portal_modified": "2025-09-05",
+      "rows": 881,
+      "encoding": "cp949",
+      "columns": ["인증번호", "모델명", "제품명", "브랜드명", "사업자구분", "법정제품분류", "리콜종류", "리콜사업자명", "제조국가명", "제조사명", "제조사국가명", "리콜방법", "위해유형", "안전성조사명", "등록일"],
+      "sha256": "92e175ec8b51b24e980847e49411de9ac21c361e9cb11ac71987d6dd2f558764"
+    },
+    {
+      "path": "data/raw/safety/recall_foreign_20210823.csv",
+      "dataset": "산업통상부_국가기술표준원_제품안전_국외리콜정보",
+      "data_go_kr_id": "15040707",
+      "url": "https://www.data.go.kr/data/15040707/fileData.do",
+      "provider": "산업통상부 국가기술표준원 (제품안전정보과)",
+      "license": "이용허락범위 제한 없음",
+      "original_file_name": "산업통상자원부_국가기술표준원_제품안전_국외리콜정보(수정)_20210823.csv",
+      "basis_date": "2021-08-23",
+      "record_date_range": ["2019-10-01", "2021-07-14"],
+      "portal_modified": "2025-09-05",
+      "rows": 2566,
+      "encoding": "cp949",
+      "columns": ["리콜모델명", "리콜제품명", "리콜브랜드명", "제조사명", "제조사국가명", "안전기준위반내용", "사고사례내용", "공표문조치내용", "공표문리콜대상제품내용", "공표일자"],
+      "sha256": "762b4d36d9cfb41d2a1867b7109c999fa2cfc47476cf76e1f15687ae26fa5444"
+    },
+    {
+      "path": "data/raw/safety/kc_certified_20220801.csv.gz",
+      "dataset": "산업통상부_국가기술표준원_제품안전_인증제품 정보",
+      "data_go_kr_id": "15040703",
+      "url": "https://www.data.go.kr/data/15040703/fileData.do",
+      "provider": "산업통상부 국가기술표준원 (제품안전정보과)",
+      "license": "이용허락범위 제한 없음",
+      "original_file_name": "산업통상자원부_국가기술표준원_제품안전_인증제품 정보(수정02)_20220801.csv",
+      "basis_date": "2022-08-01",
+      "record_date_range": ["2019-10-01", "2022-07-29"],
+      "portal_modified": "2025-09-05",
+      "rows": 152433,
+      "encoding": "cp949 (gzip 으로 압축해 보관)",
+      "columns": ["인증번호", "인증구분명", "인증상태", "인증일자", "인증변경일자", "인증사유", "제품명", "모델명", "제품분류코드명", "수입제조", "제조사명", "제조사국가명", "수입사명"],
+      "sha256": "8446addb9208cad4a6bdf42d006f4abfcbacab75d57755e6d18e56fb30db373a"
+    }
+  ],
+  "api": {
+    "dataset": "산업통상부 국가기술표준원_제품 안전인증 및 리콜 정보 (오픈API, LINK 유형)",
+    "data_go_kr_id": "15116894",
+    "url": "https://www.data.go.kr/data/15116894/openapi.do",
+    "spec": "https://www.safetykorea.kr/resources/fileData/openapi/Open_API_사용설명서_v2.1.pdf (v2.1, 2026-10-16)",
+    "auth": "HTTP 헤더 AuthKey = 제품안전정보센터가 발급한 서비스 ID (신청: safetykorea@korea.kr)",
+    "used_by": "scripts/fetch-safety.ts (CI 전용, 키는 CI 비밀변수 SAFETYKOREA_AUTH_KEY)"
+  }
+}

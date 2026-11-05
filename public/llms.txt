@@ -1,0 +1,17 @@
+# 국가기술표준원 슈퍼앱 (2026 산업부 AI 활용 경진대회 시제품 — 공식 서비스 아님)
+
+> 표준·인증·제품안전·해외규제 정보를 질문 하나로 찾는 웹 창구. 검색에 쓰는 공공데이터를 정적 JSON 으로 공개한다.
+> 모든 값은 출처 원본 그대로이며, 각 레코드의 `src` 가 `meta.json` 의 `sources` 키(기준일·출처·이용허락)를 가리킨다.
+
+## 데이터 (스키마: kats-superapp/data/v1, CORS 허용)
+
+- [meta.json](data/v1/meta.json): 출처·기준 시각·건수·파일 목록(sha256)
+- [ks.json](data/v1/ks.json): KS 국가표준 목록 — no(표준번호), label, name(한글표준명), status(제정/개정/확인/폐지), intl(국제표준 인용)
+- [kc.json](data/v1/kc.json): KC 인증 최근 기록 — 필드 이름은 제품안전정보센터 Open API(certificationList)와 같음
+- [kc-summary.json](data/v1/kc-summary.json): 제품명별 KC 인증 집계(인증구분·인증상태 분포, 전량 기준)
+- [recall.json](data/v1/recall.json): 국내·국외 리콜, 해외직구 안전성조사 결과
+
+## 주의
+
+- 인증 상태·리콜은 시간이 지나면 바뀐다. 최종 확인: 제품안전정보센터 https://www.safetykorea.kr/ , KS: e-나라표준인증 https://standard.go.kr/
+- `*.index.json` 은 MiniSearch 7 색인(사이트 내부용)이다.

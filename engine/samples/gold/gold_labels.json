@@ -1,0 +1,376 @@
+{
+  "dataset_id": "kats-reg-diff-gold-2026-v1",
+  "description": "국가기술표준원 해외규제 변경체크 AI 4쌍 가상 규정 Gold 평가셋 (26개 핵심 비교사례)",
+  "pairs": [
+    {
+      "pair_id": "pair1_kr_appliance",
+      "title": "[가상규정 1] 가정용 전기기기 안전기준 구판(2023) vs 신판(2026)",
+      "old_path": "sample_data/pair1_kr_appliance/old_appliance_2023_v1.txt",
+      "new_path": "sample_data/pair1_kr_appliance/new_appliance_2026_v2.txt",
+      "expected_old_clause_count": 15,
+      "expected_new_clause_count": 15,
+      "gold_cases": [
+        {
+          "case_id": "G01",
+          "case_type": "완전동일",
+          "old_nums": [
+            "제1조"
+          ],
+          "new_nums": [
+            "제1조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "unchanged"
+        },
+        {
+          "case_id": "G02",
+          "case_type": "서식변경",
+          "old_nums": [
+            "제2조"
+          ],
+          "new_nums": [
+            "제2조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "format_only"
+        },
+        {
+          "case_id": "G03",
+          "case_type": "인용표준판본",
+          "old_nums": [
+            "제3조"
+          ],
+          "new_nums": [
+            "제3조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "must_not_extract_year_as_measurement": true
+        },
+        {
+          "case_id": "G04",
+          "case_type": "단위동등",
+          "old_nums": [
+            "제4조"
+          ],
+          "new_nums": [
+            "제4조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "numeric_equivalent"
+        },
+        {
+          "case_id": "G05",
+          "case_type": "부등호경계",
+          "old_nums": [
+            "제5조"
+          ],
+          "new_nums": [
+            "제5조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "boundary_changed"
+        },
+        {
+          "case_id": "G06",
+          "case_type": "상한/하한",
+          "old_nums": [
+            "제6조"
+          ],
+          "new_nums": [
+            "제6조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "tightened"
+        },
+        {
+          "case_id": "G07",
+          "case_type": "조건변경",
+          "old_nums": [
+            "제7조"
+          ],
+          "new_nums": [
+            "제7조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "condition_changed_review"
+        },
+        {
+          "case_id": "G08",
+          "case_type": "분할",
+          "old_nums": [
+            "제8조"
+          ],
+          "new_nums": [
+            "제8조의1",
+            "제8조의2"
+          ],
+          "relationship": "one_to_many",
+          "semantic_status": "changed"
+        },
+        {
+          "case_id": "G09",
+          "case_type": "번호이동",
+          "old_nums": [
+            "제9조"
+          ],
+          "new_nums": [
+            "제10조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "unchanged",
+          "expected_flag": "moved"
+        },
+        {
+          "case_id": "G10",
+          "case_type": "이동+변경_부정어변경",
+          "old_nums": [
+            "제10조"
+          ],
+          "new_nums": [
+            "제11조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_flag": "moved"
+        },
+        {
+          "case_id": "G11",
+          "case_type": "삭제후보",
+          "old_nums": [
+            "제11조"
+          ],
+          "new_nums": [],
+          "relationship": "unmatched_old",
+          "semantic_status": "deletion_candidate"
+        },
+        {
+          "case_id": "G12",
+          "case_type": "병합",
+          "old_nums": [
+            "제12조",
+            "제13조"
+          ],
+          "new_nums": [
+            "제12조"
+          ],
+          "relationship": "many_to_one",
+          "semantic_status": "changed"
+        },
+        {
+          "case_id": "G13",
+          "case_type": "신설후보",
+          "old_nums": [],
+          "new_nums": [
+            "제14조"
+          ],
+          "relationship": "unmatched_new",
+          "semantic_status": "addition_candidate"
+        },
+        {
+          "case_id": "G14",
+          "case_type": "시행일변경_유예기간",
+          "old_nums": [
+            "부칙제1조"
+          ],
+          "new_nums": [
+            "부칙제1조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed"
+        },
+        {
+          "case_id": "G15",
+          "case_type": "근거부족_미확정기한",
+          "old_nums": [
+            "부칙제2조"
+          ],
+          "new_nums": [
+            "부칙제2조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_date_status": "unconfirmed"
+        }
+      ]
+    },
+    {
+      "pair_id": "pair2_kr_lighting_hwpx",
+      "title": "[가상규정 2] 스마트 조명기기 효율·전자파 기준 구판(2022) vs 신판(2026) [HWPX]",
+      "old_path": "sample_data/pair2_kr_lighting_hwpx/old_lighting_2022_v1.hwpx",
+      "new_path": "sample_data/pair2_kr_lighting_hwpx/new_lighting_2026_v2.hwpx",
+      "expected_old_clause_count": 7,
+      "expected_new_clause_count": 7,
+      "gold_cases": [
+        {
+          "case_id": "G16",
+          "case_type": "단위동등_전력",
+          "old_nums": [
+            "제2조"
+          ],
+          "new_nums": [
+            "제2조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "numeric_equivalent"
+        },
+        {
+          "case_id": "G17",
+          "case_type": "단위동등_전압",
+          "old_nums": [
+            "제3조"
+          ],
+          "new_nums": [
+            "제3조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "numeric_equivalent"
+        },
+        {
+          "case_id": "G18",
+          "case_type": "단위동등_시간",
+          "old_nums": [
+            "제4조"
+          ],
+          "new_nums": [
+            "제4조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "numeric_equivalent"
+        },
+        {
+          "case_id": "G19",
+          "case_type": "허용치_상한강화",
+          "old_nums": [
+            "제5조"
+          ],
+          "new_nums": [
+            "제5조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "tightened"
+        },
+        {
+          "case_id": "G20",
+          "case_type": "표셀변화_효율하한강화(lm/W)",
+          "old_nums": [
+            "제6조"
+          ],
+          "new_nums": [
+            "제6조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "tightened",
+          "note": "v0.2: lm/W 단위 비교 지원으로 기대값을 unit_unsupported_review → tightened(최소 광효율 90→115 lm/W 이상) 로 갱신"
+        }
+      ]
+    },
+    {
+      "pair_id": "pair3_en_battery",
+      "title": "[가상규정 3] 산업·전기차 배터리 안전기준 구판(2022) vs 신판(2026) [PDF/영문]",
+      "old_path": "sample_data/pair3_en_battery/old_battery_2022_revA.pdf",
+      "new_path": "sample_data/pair3_en_battery/new_battery_2026_revB.pdf",
+      "expected_old_clause_count": 7,
+      "expected_new_clause_count": 7,
+      "gold_cases": [
+        {
+          "case_id": "G21",
+          "case_type": "반복번호_장구분_하한강화",
+          "old_nums": [
+            "3.1"
+          ],
+          "new_nums": [
+            "3.1"
+          ],
+          "heading_hint": "CHAPTER 2",
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "tightened"
+        },
+        {
+          "case_id": "G22",
+          "case_type": "반복번호_부속서_순서역전",
+          "old_nums": [
+            "3.1"
+          ],
+          "new_nums": [
+            "3.1"
+          ],
+          "heading_hint": "ANNEX A",
+          "relationship": "one_to_one",
+          "semantic_status": "changed"
+        },
+        {
+          "case_id": "G23",
+          "case_type": "영문부정어변경",
+          "old_nums": [
+            "4.1"
+          ],
+          "new_nums": [
+            "4.1"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed"
+        }
+      ]
+    },
+    {
+      "pair_id": "pair4_en_machinery",
+      "title": "[가상규정 4] 스마트 산업기계 제어안전 구판(2021) vs 신판(2026) [DOCX]",
+      "old_path": "sample_data/pair4_en_machinery/old_machinery_2021_v1.docx",
+      "new_path": "sample_data/pair4_en_machinery/new_machinery_2026_v2.docx",
+      "expected_old_clause_count": 6,
+      "expected_new_clause_count": 8,
+      "gold_cases": [
+        {
+          "case_id": "G24",
+          "case_type": "1대3분할",
+          "old_nums": [
+            "제2조"
+          ],
+          "new_nums": [
+            "제2조의1",
+            "제2조의2",
+            "제2조의3"
+          ],
+          "relationship": "one_to_many",
+          "semantic_status": "changed"
+        },
+        {
+          "case_id": "G25",
+          "case_type": "적합성평가변경",
+          "old_nums": [
+            "제4조"
+          ],
+          "new_nums": [
+            "제4조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed"
+        },
+        {
+          "case_id": "G26",
+          "case_type": "응답시간강화_표셀변화",
+          "old_nums": [
+            "제5조"
+          ],
+          "new_nums": [
+            "제5조"
+          ],
+          "relationship": "one_to_one",
+          "semantic_status": "changed",
+          "expected_numeric_status": "tightened"
+        }
+      ]
+    }
+  ]
+}
