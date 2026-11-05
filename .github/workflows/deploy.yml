@@ -92,6 +92,9 @@ jobs:
           .venv/bin/pip install --quiet -r engine/requirements.txt
           .venv/bin/python -m unittest discover -s engine/tests -t engine
 
+      - name: 공공 GitLab 용 사이트 묶음 만들기 (site.tar.gz — GitLab 실행기에 Node.js 가 없어도 받아 쓸 수 있게)
+        run: npm run pack-site
+
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
@@ -120,4 +123,5 @@ jobs:
             sleep 20
           done
           grep -q '<div id="root">' index.html
+          curl -fsSI "${URL}site.tar.gz" | grep -i '^content-length'
           python3 -c "import json; m=json.load(open('meta.json')); print('meta:', m['schema'], m['counts'], m['api']['status'])"

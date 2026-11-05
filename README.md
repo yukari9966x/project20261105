@@ -121,12 +121,17 @@ npm run preview
 
 ### 공공 GitLab Pages (이관)
 
-바뀌는 것은 CI 파일 하나와 사이트 기본 경로뿐입니다. [`.gitlab-ci.yml`](.gitlab-ci.yml)의 `pages` 잡이 같은 명령을 실행하고 `dist/`를 `public/`으로 올립니다.
+[`.gitlab-ci.yml`](.gitlab-ci.yml)은 **Windows(PowerShell)·Linux 실행기 어디서나** 돌도록 두 셸에 공통인 명령(`curl`·`tar`·`npm`)만 씁니다. 사이트를 만드는 방법은 CI/CD 변수 `SITE_SOURCE`로 고릅니다.
 
-- 서비스키: **Settings → CI/CD → Variables**에 `SAFETYKOREA_AUTH_KEY` (masked·protected)
-- 예약: **Build → Pipeline schedules**에 매일 06:00(Asia/Seoul)
-- 경로: 기본은 상대 경로(`./`)라 Pages 도메인 규칙과 상관없이 동작합니다. 고정하려면 `BASE_PATH` 변수.
-- 실행기가 인터넷에 못 나가면 Pyodide·휠을 `vendor/pyodide/`에 넣어 커밋하면 내려받지 않습니다.
+| 방식 | 하는 일 | 실행기에 필요한 것 |
+|---|---|---|
+| **기본** (`SITE_SOURCE` 없음) | GitHub Actions가 매일 06:00 빌드해 게시한 `site.tar.gz`(16MB)를 받아 그대로 Pages 에 올림 | `curl`·`tar`(Windows 10·Server 2019 이상 기본 포함), `yukari9966x.github.io` 로 나가는 인터넷. **Node.js 불필요** |
+| `SITE_SOURCE=build` | 이 GitLab 에서 수집·색인·빌드까지 (GitHub Actions 와 같은 단계) | Node.js 22, 외부 접속(registry.npmjs.org·cdn.jsdelivr.net·files.pythonhosted.org) |
+
+- 처음 한 번: **Build → Pipelines → Run pipeline**(파이프라인 실행) → 브랜치 선택 → 실행. 잡 순서는 `site:download`(또는 `site:build`) → `pages`.
+- 매일 갱신: **Build → Pipeline schedules**에 매일 07:00(Asia/Seoul) — GitHub 빌드(06:00) 뒤에 받도록.
+- 서비스키(`SITE_SOURCE=build` 일 때만): **Settings → CI/CD → Variables**에 `SAFETYKOREA_AUTH_KEY` (masked·protected)
+- 경로: 상대 경로(`./`)로 빌드되어 Pages 도메인 규칙과 상관없이 동작합니다.
 - 정부 AI 실험실 GitLab 은 푸시할 때 보안 검사(Gitleaks·Semgrep·OSV-Scanner·Trivy·Syft)를 하고, 취약한 의존성이 있으면 푸시를 거부합니다. 푸시 전에 `npm run check:vulns` 로 같은 DB 를 미리 확인하세요. Python 패키지를 올릴 때는 `engine/requirements.txt` 와 `scripts/lib/pyodide-packages.ts` 를 함께 고칩니다(테스트가 두 곳의 버전이 같은지 확인).
 - Pages 접근 제어를 켜면 다른 사이트가 데이터 JSON을 가져갈 수 없으므로 공개로 둡니다. 총용량은 48.6MB로 기본 한도(100MB) 안입니다.
 
@@ -135,9 +140,10 @@ npm run preview
 | 보이는 것 | 원인 | 할 일 |
 |---|---|---|
 | 왼쪽 메뉴에 Build(빌드)가 없음 | 프로젝트의 CI/CD 기능이 꺼짐 | Settings → General → Visibility, project features, permissions 에서 **CI/CD**·**Pages** 켜기 |
-| Build → Pipelines 가 비어 있음 | 푸시한 브랜치가 기본 브랜치가 아니거나, 빈 프로젝트에 첫 브랜치를 올릴 때 파이프라인이 안 만들어짐 | **Run pipeline**(파이프라인 실행)으로 브랜치를 골라 실행. 기본 브랜치는 Settings → Repository → Branch defaults |
+| Build → Pipelines 가 비어 있음 | 푸시한 브랜치가 기본 브랜치가 아니거나, 빈 프로젝트에 첫 브랜치를 올릴 때 파이프라인이 안 만들어짐 | **Run pipeline**으로 브랜치를 골라 실행. 기본 브랜치는 Settings → Repository → Branch defaults |
 | 파이프라인이 *pending/stuck*, "no active runners" | 이 프로젝트가 쓸 수 있는 실행기(runner)가 없음 | Settings → CI/CD → Runners 에서 Instance(공유) runner 켜기. 없으면 운영 측에 요청. 태그가 필요한 runner 면 job 에 `tags:` 추가 |
-| 실행됐다가 실패 | `node:22` 이미지를 못 받거나 `npm ci`·휠 내려받기 실패(외부망 차단) | job 로그 확인. 내부 미러 이미지·npm 레지스트리 주소 또는 `vendor/pyodide/` 사용 |
+| `'npm' 용어는 cmdlet…로 인식되지 않습니다` | Node.js 가 없는 Windows(PowerShell) 실행기에서 `SITE_SOURCE=build` 로 돌림 | `SITE_SOURCE` 변수를 지우고 기본 방식으로 실행 (또는 실행기에 Node.js 22 설치 후 runner 서비스 재시작) |
+| `site:download` 에서 curl 실패 | 실행기가 인터넷(github.io)에 나갈 수 없음 | 운영 측에 github.io 접속 허용 요청, 또는 빌드 결과물을 저장소에 넣어 올리는 방식으로 전환 |
 
 ## AI 연결 (선택)
 
@@ -195,6 +201,8 @@ npm run preview
 │  ├─ build-index.ts             # 색인·meta.json → public/data/v1 (빌드 때 dist/data/v1)
 │  ├─ copy-pyodide.ts            # 필요한 Pyodide 파일만 복사(sha256 검증) + 엔진·샘플 묶음
 │  ├─ check-size.ts              # 총용량 100MB 넘으면 빌드 실패
+│  ├─ check-vulns.ts             # 의존성 취약점 검사(OSV) — 정부 GitLab 푸시 전에
+│  ├─ pack-site.ts               # 빌드 결과를 site.tar.gz 로 (GitLab 이 Node.js 없이 받아 씀)
 │  └─ smoke-pyodide.mjs          # 실제 Pyodide 에서 엔진 설치·실행 점검
 ├─ tests/e2e/run-e2e.mjs         # 브라우저 종단 점검
 ├─ .github/workflows/deploy.yml  # 예약 수집 + 빌드 + Pages 배포

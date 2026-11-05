@@ -1,20 +1,44 @@
-# 공공 GitLab(예: gitlab.aigov.go.kr) 이관용 — GitHub Actions(.github/workflows/deploy.yml)와 같은 단계.
-# 바뀌는 것은 이 CI 파일과 사이트 기본 경로뿐이며, 빌드·수집 스크립트는 같은 것을 쓴다.
+# 공공 GitLab(예: gitlab.aigov.go.kr) 용 Pages 배포 — Windows(PowerShell)·Linux 실행기 공용.
+# 스크립트는 두 셸에서 똑같이 도는 명령(curl·tar·npm)만 쓴다. (bash 의 rm -rf·&&·$변수 는 PowerShell 에서 안 됨)
 #
-#  - 서비스키: Settings → CI/CD → Variables 에 SAFETYKOREA_AUTH_KEY (masked · protected)
-#  - 예약 실행: Build → Pipeline schedules 에 매일 06:00(Asia/Seoul) 추가
-#  - 경로: 상대 경로('./')로 빌드하므로 Pages 도메인 규칙(하위 경로·고유 도메인)과 상관없이 동작한다.
-#          특정 경로로 고정하려면 BASE_PATH 변수를 지정한다 (예: /kats-superapp/).
-#  - 공개 범위: Pages 접근 제어를 켜면 로그인 화면으로 넘어가 다른 사이트가 데이터 JSON 을 가져갈 수 없으므로 공개로 둔다.
-#  - 실행기(runner)가 인터넷에 나갈 수 없으면 Pyodide·휠을 vendor/pyodide/ 에 넣어 커밋한다(scripts/copy-pyodide.ts 참고).
-#  - GitLab 버전과 상관없이 동작하도록 가장 오래된 방식(public/ 폴더)으로 쓴다.
+# 사이트를 만드는 방법은 두 가지이고, CI/CD 변수 SITE_SOURCE 로 고른다.
+#  1) 기본(SITE_SOURCE 없음): GitHub Actions 가 매일 06:00 빌드해 GitHub Pages 에 올린 site.tar.gz 를 받아 그대로 올린다.
+#     → 실행기에 Node.js 가 없어도 된다. 필요한 것: curl·tar(Windows 10 이상·Server 2019 이상 기본 포함)와
+#       yukari9966x.github.io 로 나가는 인터넷. 매일 갱신하려면 Build → Pipeline schedules 에 07:00(Asia/Seoul) 추가.
+#  2) SITE_SOURCE=build: 이 GitLab 에서 수집·색인·빌드까지 한다 (GitHub Actions 와 같은 단계).
+#     → 실행기에 Node.js 22 와 외부 접속(registry.npmjs.org·cdn.jsdelivr.net·files.pythonhosted.org)이 필요.
+#       서비스키는 Settings → CI/CD → Variables 에 SAFETYKOREA_AUTH_KEY (masked·protected).
 #
-# 실행기(runner) 조건: Docker 실행기(node:22 이미지를 받을 수 있어야 함), 태그 없는 job 실행 허용,
-#   외부 접속 registry.npmjs.org · cdn.jsdelivr.net · files.pythonhosted.org (api.osv.dev 는 없으면 경고만)
-#   공유 runner 에 태그가 필요하면 pages 잡에 tags: [태그] 를 추가한다.
-# 파이프라인이 안 보이면: Build → Pipelines → '파이프라인 실행'(Run pipeline) 으로 브랜치를 골라 직접 실행할 수 있다.
-pages:
-  image: node:22
+#  - 경로: 상대 경로('./')로 빌드되어 Pages 도메인 규칙(하위 경로·고유 도메인)과 상관없이 동작한다.
+#  - 공개 범위: Pages 접근 제어를 켜면 다른 사이트가 데이터 JSON 을 가져갈 수 없으므로 공개로 둔다.
+#  - 파이프라인이 안 보이면: Build → Pipelines → 'Run pipeline'(파이프라인 실행)으로 브랜치를 골라 직접 실행한다.
+#  - GitLab 버전과 상관없이 동작하도록 가장 오래된 방식(public/ 폴더)으로 Pages 를 올린다.
+
+stages:
+  - prepare
+  - deploy
+
+# 1) 기본: GitHub 에서 빌드된 사이트 받기 (Node.js 불필요)
+site:download:
+  stage: prepare
+  script:
+    - curl -fsSL -o site.tar.gz https://yukari9966x.github.io/project20261105/site.tar.gz
+    - tar -xzf site.tar.gz
+  artifacts:
+    paths:
+      - dist
+    expire_in: 1 day
+  rules:
+    - if: $SITE_SOURCE == "build"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# 2) 선택: 이 GitLab 에서 수집·빌드 (Node.js 22 필요, SITE_SOURCE=build)
+site:build:
+  stage: prepare
+  image: node:22 # Docker 실행기에서만 쓰임 (shell 실행기는 설치된 Node.js 를 씀)
   variables:
     PUBLIC_SITE_URL: "$CI_PAGES_URL/"
   script:
@@ -22,11 +46,32 @@ pages:
     - npm run check:vulns # 의존성 취약점(OSV). 외부망이 막혀 있으면 경고만 하고 넘어감
     - npm run fetch-data # 서비스키는 CI/CD Variables 에서
     - npm run build # dist/ 생성 (총용량 100MB 넘으면 실패)
-    - rm -rf public && cp -r dist public
+  artifacts:
+    paths:
+      - dist
+    expire_in: 1 day
+  rules:
+    - if: $SITE_SOURCE != "build"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Pages 배포: 앞 단계가 만든 dist/ 를 public/ 으로 옮겨 올린다 (tar 는 Windows·Linux 공통)
+pages:
+  stage: deploy
+  needs:
+    - job: site:download
+      optional: true
+    - job: site:build
+      optional: true
+  script:
+    - tar -cf site.tar -C dist .
+    - tar -xf site.tar -C public
   artifacts:
     paths:
       - public
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule" # 매일 수집 (Pipeline schedules)
-    - if: $CI_PIPELINE_SOURCE == "web" # 화면의 '파이프라인 실행' 버튼 — 어느 브랜치든
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # 기본 브랜치에 푸시
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

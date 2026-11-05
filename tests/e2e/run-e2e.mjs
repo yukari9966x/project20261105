@@ -10,7 +10,7 @@
  */
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, extname, join } from 'node:path';
+import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
@@ -18,7 +18,8 @@ import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const DIST = join(ROOT, 'dist');
+// SITE_DIR=다른 폴더 — 예: GitLab 처럼 site.tar.gz 를 풀어 만든 public/ 을 그대로 점검
+const DIST = process.env.SITE_DIR ? resolve(ROOT, process.env.SITE_DIR) : join(ROOT, 'dist');
 const SHOTS = process.env.SCREENSHOTS ? join(ROOT, process.env.SCREENSHOTS) : null;
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
