@@ -108,6 +108,8 @@ async function handle(req: WorkerRequest): Promise<void> {
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error('[kats-diff worker]', req.type, message);
+    if (req.type === 'init') initPromise = null; // 다음 시도에서 처음부터 다시 준비
     post({ type: 'result', id, data: { ok: false, error: { code: 'WORKER_ERROR', message, remediation: '페이지를 새로 고친 뒤 다시 시도하세요. 오래된 브라우저라면 최신 Chrome·Edge·Firefox·Safari 를 쓰세요.' } } });
   }
 }

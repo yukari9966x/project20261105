@@ -1,0 +1,25 @@
+# 공공 GitLab(예: gitlab.aigov.go.kr) 이관용 — GitHub Actions(.github/workflows/deploy.yml)와 같은 단계.
+# 바뀌는 것은 이 CI 파일과 사이트 기본 경로뿐이며, 빌드·수집 스크립트는 같은 것을 쓴다.
+#
+#  - 서비스키: Settings → CI/CD → Variables 에 SAFETYKOREA_AUTH_KEY (masked · protected)
+#  - 예약 실행: Build → Pipeline schedules 에 매일 06:00(Asia/Seoul) 추가
+#  - 경로: 상대 경로('./')로 빌드하므로 Pages 도메인 규칙(하위 경로·고유 도메인)과 상관없이 동작한다.
+#          특정 경로로 고정하려면 BASE_PATH 변수를 지정한다 (예: /kats-superapp/).
+#  - 공개 범위: Pages 접근 제어를 켜면 로그인 화면으로 넘어가 다른 사이트가 데이터 JSON 을 가져갈 수 없으므로 공개로 둔다.
+#  - 실행기(runner)가 인터넷에 나갈 수 없으면 Pyodide·휠을 vendor/pyodide/ 에 넣어 커밋한다(scripts/copy-pyodide.ts 참고).
+#  - GitLab 버전과 상관없이 동작하도록 가장 오래된 방식(public/ 폴더)으로 쓴다.
+pages:
+  image: node:22
+  variables:
+    PUBLIC_SITE_URL: "$CI_PAGES_URL/"
+  script:
+    - npm ci
+    - npm run fetch-data # 서비스키는 CI/CD Variables 에서
+    - npm run build # dist/ 생성 (총용량 100MB 넘으면 실패)
+    - rm -rf public && cp -r dist public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

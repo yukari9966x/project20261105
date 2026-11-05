@@ -651,6 +651,17 @@ label.field .hint {
 }
 .more {
   justify-self: start;
+  white-space: normal;
+  text-align: left;
+  max-width: 100%;
+}
+/* 그리드 항목이 긴 내용 때문에 화면 폭을 넘지 않게 */
+.stack > *,
+.stack-lg > *,
+.list > *,
+.grid-2 > *,
+.grid-3 > * {
+  min-width: 0;
 }
 .tabs {
   display: flex;
@@ -933,9 +944,9 @@ mark.ev {
   position: sticky;
   top: 58px;
   z-index: 5;
-  background: color-mix(in srgb, var(--bg) 94%, transparent);
-  backdrop-filter: blur(6px);
+  background: var(--bg);
   padding: 8px 0;
+  box-shadow: 0 6px 8px -8px rgba(16, 24, 40, 0.25);
 }
 .diagram {
   width: 100%;

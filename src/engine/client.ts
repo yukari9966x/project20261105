@@ -64,7 +64,8 @@ class EngineClient {
   init(progress?: Progress): Promise<EngineInfo> {
     if (!this.initPromise) {
       const baseUrl = new URL(import.meta.env.BASE_URL, location.href).href;
-      this.initPromise = this.call<{ ok: boolean }>({ type: 'init', baseUrl }, progress).then(() => {
+      this.initPromise = this.call<{ ok: boolean; error?: EngineError }>({ type: 'init', baseUrl }, progress).then((res) => {
+        if (!res.ok) throw new EngineFailure(res.error ?? { code: 'INIT', message: '엔진을 준비하지 못했습니다.' });
         this.info = this.readyInfo ?? { pyodide: '?', python: '?', engine: '?', loadMs: 0 };
         return this.info;
       });

@@ -162,7 +162,7 @@ export default function Diff() {
       </header>
 
       {status !== 'ready' && (
-        <div className={`card stack ${status === 'error' ? '' : ''}`} role="status" aria-live="polite">
+        <div className="card stack" role="status" aria-live="polite" data-testid="engine-status">
           {status === 'error' ? (
             <div className="notice bad">
               엔진을 준비하지 못했습니다: {error?.message} {error?.remediation}

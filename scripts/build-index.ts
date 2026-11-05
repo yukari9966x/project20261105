@@ -10,7 +10,7 @@
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import MiniSearch from 'minisearch';
@@ -24,7 +24,7 @@ import { formatKsNo, koDate, koDateTime } from '../src/lib/format';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = process.env.DATA_OUT_DIR ? join(ROOT, process.env.DATA_OUT_DIR) : join(ROOT, 'public', 'data', 'v1');
 const KC_MAX_RECORDS = Number(process.env.KC_MAX_RECORDS ?? 30000);
-const SNAPSHOT = join(ROOT, 'data', 'snapshot', 'safety-api.json');
+const SNAPSHOT = process.env.SAFETY_SNAPSHOT_PATH ? resolve(process.env.SAFETY_SNAPSHOT_PATH) : join(ROOT, 'data', 'snapshot', 'safety-api.json');
 
 interface RawSource {
   path: string;

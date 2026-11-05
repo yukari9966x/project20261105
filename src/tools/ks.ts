@@ -88,7 +88,8 @@ export function searchKs(data: KsData, rawQuery: string, opts: KsSearchOptions =
 
   const expandedTerms = opts.expand === false ? [] : expand(rawQuery, 'ks');
   for (const term of expandedTerms) {
-    for (const s of coverageSearch(data.index, term, 0.99)) add(s.id, { score: s.score * 0.9, reason: `생활 용어 → 표준명 '${term}'` });
+    // 생활 용어로 묻는 사람은 대개 제품 안전을 찾으므로, 같은 표현이면 '안전' 표준(예: 60335 개별 요구사항)을 앞에 둔다
+    for (const s of coverageSearch(data.index, term, 0.99)) add(s.id, { score: s.score * (data.records[s.id].name.includes('안전') ? 1 : 0.85), reason: `생활 용어 → 표준명 '${term}'` });
   }
 
   let hits = [...byId.values()];

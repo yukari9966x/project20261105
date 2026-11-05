@@ -51,11 +51,13 @@ function topDiv(row: KcSummaryRow): [string, number] {
 /** 인증구분 원문을 읽기 쉽게: '전기용품및생활용품안전관리법대상>안전인증대상전기용품' → '전기생활용품안전법 · 안전인증 대상 전기용품' */
 export function shortDiv(div: string): string {
   const [law, kind = ''] = div.replace(/\s+/g, '').split('>');
+  // 데이터의 실제 표기(공백 제거 후): 전기용품및생활용품안전관리법대상 · 어린이제품특별법대상 · 품질경영및공산품안전관리법대상 …
   const lawShort = law
-    .replace('전기용품및생활용품안전관리법대상', '전기생활용품안전법')
-    .replace('어린이제품안전특별법대상', '어린이제품안전특별법')
-    .replace('전기용품안전관리법대상', '(구)전기용품안전관리법')
-    .replace('품질경영및공산품안전관리법대상', '(구)공산품안전관리법');
+    .replace(/^전기용품및생활용품안전관리법대상$/, '전기생활용품안전법')
+    .replace(/^어린이제품(안전)?특별법대상$/, '어린이제품안전특별법')
+    .replace(/^전기용품안전관리법대상$/, '(구)전기용품안전관리법')
+    .replace(/^품질경영및공산품안전관리법대상$/, '(구)품질경영및공산품안전관리법')
+    .replace(/대상$/, '');
   const kindShort = kind.replace(/대상/g, ' 대상 ').replace(/\s+/g, ' ').trim();
   return kindShort ? `${lawShort} · ${kindShort}` : lawShort;
 }

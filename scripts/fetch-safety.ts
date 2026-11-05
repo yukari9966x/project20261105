@@ -11,18 +11,19 @@
  *   SAFETY_OVERLAP_DAYS      직전 수집 이후 다시 확인할 겹침 날수 (기본 7, 늦게 등록된 건 보정)
  *   SAFETY_MAX_REQUESTS      한 번에 보낼 최대 요청 수 (기본 2500)
  *   SAFETY_REQUEST_DELAY_MS  요청 간격 (기본 200ms — 서비스 운영에 지장을 주지 않도록)
+ *   SAFETY_SNAPSHOT_PATH     결과 파일 경로 (기본 data/snapshot/safety-api.json)
  *
  * 실패해도 빌드를 멈추지 않는다: 키가 없거나 호출이 실패하면 직전 스냅샷을 그대로 쓰고, 화면에 그 기준 시각을 표시한다.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { KcRecord, Meta, RecallRecord } from '../src/data/types';
 import { ApiFatalError, ENDPOINTS, MAX_ROWS, buildUrl, dayRange, mergeKc, mergeRecalls, normalizeRows, parseResponse, type Endpoint } from './lib/safety-api';
 import { SRC } from './lib/safety';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = join(ROOT, 'data', 'snapshot', 'safety-api.json');
+const OUT = process.env.SAFETY_SNAPSHOT_PATH ? resolve(process.env.SAFETY_SNAPSHOT_PATH) : join(ROOT, 'data', 'snapshot', 'safety-api.json');
 
 const env = (k: string, d = '') => (process.env[k] ?? '').trim() || d;
 const KEY = env('SAFETYKOREA_AUTH_KEY') || env('SAFETY_API_KEY');
@@ -169,12 +170,13 @@ export async function run(): Promise<Snapshot> {
   };
 }
 
-async function main() {
+export async function main(): Promise<Snapshot> {
   const snap = await run();
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, JSON.stringify(snap));
   console.log(`[fetch-safety] ${snap.status}: ${snap.message}`);
   for (const line of snap.log) console.log('  ' + line);
+  return snap;
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

@@ -1,0 +1,115 @@
+# 예약 수집 + 빌드 + GitHub Pages 배포
+#  - 매일 06:00(한국 시간) = UTC 21:00 에 제품안전 Open API 를 받아 /data/v1 을 새로 만든다.
+#  - 서비스키는 Actions Secrets 의 SAFETYKOREA_AUTH_KEY 에만 둔다(사이트에는 결과 JSON 만 올라감).
+#    키가 없거나 수집이 실패하면 직전 스냅샷(배포된 사이트의 /data/v1)을 그대로 쓴다.
+#  - 공개 저장소는 60일간 활동이 없으면 예약 실행이 자동 중지된다(Actions 탭에서 다시 켜기).
+#  - 공공 GitLab 으로 옮길 때는 .gitlab-ci.yml 의 pages 잡을 쓴다(빌드 명령은 같음).
+name: 수집·빌드·배포
+
+on:
+  schedule:
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+    inputs:
+      backfill_days:
+        description: '첫 수집 때 리콜을 거슬러 받을 날수'
+        required: false
+        default: '365'
+  push:
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      site_url: ${{ steps.site.outputs.base_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Pages 설정 읽기
+        id: pages
+        uses: actions/configure-pages@v6
+        continue-on-error: true
+
+      - name: 사이트 주소 정하기
+        id: site
+        env:
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          BASE_URL="${PAGES_BASE_URL:-https://${OWNER}.github.io/${REPO}}"
+          if [ -n "$PAGES_BASE_URL" ]; then BASE_PATH="$PAGES_BASE_PATH"; elif [ "$REPO" = "${OWNER}.github.io" ]; then BASE_PATH=""; else BASE_PATH="/${REPO}"; fi
+          echo "base_url=${BASE_URL%/}/" >> "$GITHUB_OUTPUT"
+          echo "base_path=${BASE_PATH%/}/" >> "$GITHUB_OUTPUT"
+          echo "사이트: ${BASE_URL%/}/ (base ${BASE_PATH%/}/)"
+
+      - name: 제품안전 Open API 수집 (CI 전용)
+        env:
+          SAFETYKOREA_AUTH_KEY: ${{ secrets.SAFETYKOREA_AUTH_KEY }}
+          PUBLIC_SITE_URL: ${{ steps.site.outputs.base_url }}
+          SAFETY_BACKFILL_DAYS: ${{ inputs.backfill_days || '365' }}
+        run: npm run fetch-data
+
+      - name: 색인 생성 · Pyodide 복사 · 빌드 · 용량 검사(100MB)
+        env:
+          BASE_PATH: ${{ steps.site.outputs.base_path }}
+        run: npm run build
+
+      - name: 단위 테스트 (검색·질문 분류·수집 스크립트 — 방금 만든 /data/v1 로)
+        run: npm test
+
+      - name: 변경체크 엔진 테스트 (CPython, Pyodide 와 같은 패키지 버전)
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --quiet -r engine/requirements.txt
+          .venv/bin/python -m unittest discover -s engine/tests -t engine
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    # 예약 실행은 항상 기본 브랜치에서 돈다. push·수동 실행은 기본 브랜치일 때만 배포한다.
+    if: github.event_name == 'schedule' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: GitHub Pages 배포
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: 배포 확인
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          URL="${PAGE_URL%/}/"
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "${URL}data/v1/meta.json" -o meta.json && curl -fsS "$URL" -o index.html; then break; fi
+            sleep 20
+          done
+          grep -q '<div id="root">' index.html
+          python3 -c "import json; m=json.load(open('meta.json')); print('meta:', m['schema'], m['counts'], m['api']['status'])"

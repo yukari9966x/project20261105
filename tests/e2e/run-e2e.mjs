@@ -96,7 +96,9 @@ await step('① 질문창 — 수입·판매 질문에 KC·리콜·KS 카드와 
     if (!body.includes(must)) throw new Error(`답변에 '${must}' 없음`);
   }
   if (!(await page.locator('a[href*="safetykorea.kr"]').count())) throw new Error('제품안전정보센터 원문 링크 없음');
-  await shot('02_ask_answer.png', true);
+  await page.getByText('이렇게 이해했어요').scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollBy(0, -90));
+  await shot('02_ask_answer.png');
 });
 
 await step('② KC·리콜 — 인증번호로 현재 상태 링크', async () => {
@@ -125,8 +127,16 @@ await step('③ KS — 표준번호·생활 용어 검색', async () => {
 await step('④ 변경체크 — Pyodide 엔진 로딩', async () => {
   await page.goto(base + '#/diff');
   await page.getByRole('button', { name: /가정용 전기기기 안전 가상규정/ }).waitFor({ timeout: 30000 });
-  // 엔진 준비 표시가 사라질 때까지 (최대 3분)
-  await page.getByText('변경체크 엔진 준비 중').waitFor({ state: 'detached', timeout: 180000 });
+  // 엔진 준비 표시가 사라질 때까지 (최대 3분). 실패하면 오류 문구를 그대로 보고한다.
+  const status = page.getByTestId('engine-status');
+  const t0 = Date.now();
+  while (Date.now() - t0 < 180000) {
+    if (!(await status.count())) return;
+    const text = await status.innerText().catch(() => '');
+    if (text.includes('준비하지 못했습니다')) throw new Error(text.slice(0, 300));
+    await page.waitForTimeout(500);
+  }
+  throw new Error('엔진 준비 시간 초과');
 });
 
 await step('④ 변경체크 — 샘플 대조·근거·검토', async () => {
@@ -204,6 +214,16 @@ await step('휴대폰 폭(390px) — 하단 탭·가로 스크롤 없음', async
   await p.getByRole('button', { name: '물어보기' }).click();
   await p.getByText('이렇게 이해했어요').waitFor({ timeout: 60000 });
   if (SHOTS) await p.screenshot({ path: join(SHOTS, '08_mobile_answer.png') });
+  // 휴대폰에서 변경체크 결과 화면도 가로로 넘치지 않아야 한다
+  await p.goto(base + '#/diff');
+  await p.getByRole('button', { name: /가정용 전기기기 안전 가상규정/ }).click();
+  await p.getByRole('button', { name: '2. 대조 실행' }).click();
+  await p.getByRole('tab', { name: '변경대조표' }).waitFor({ timeout: 180000 });
+  await p.locator('.change-row').first().click();
+  await p.waitForTimeout(500);
+  const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (over > 1) throw new Error(`#/diff 결과: 가로 넘침 ${over}px`);
+  if (SHOTS) await p.screenshot({ path: join(SHOTS, '09_mobile_diff.png') });
   await m.close();
 });
 
