@@ -130,6 +130,15 @@ npm run preview
 - 정부 AI 실험실 GitLab 은 푸시할 때 보안 검사(Gitleaks·Semgrep·OSV-Scanner·Trivy·Syft)를 하고, 취약한 의존성이 있으면 푸시를 거부합니다. 푸시 전에 `npm run check:vulns` 로 같은 DB 를 미리 확인하세요. Python 패키지를 올릴 때는 `engine/requirements.txt` 와 `scripts/lib/pyodide-packages.ts` 를 함께 고칩니다(테스트가 두 곳의 버전이 같은지 확인).
 - Pages 접근 제어를 켜면 다른 사이트가 데이터 JSON을 가져갈 수 없으므로 공개로 둡니다. 총용량은 48.6MB로 기본 한도(100MB) 안입니다.
 
+**파이프라인이 안 돌 때** (화면에서 보이는 것으로 구분)
+
+| 보이는 것 | 원인 | 할 일 |
+|---|---|---|
+| 왼쪽 메뉴에 Build(빌드)가 없음 | 프로젝트의 CI/CD 기능이 꺼짐 | Settings → General → Visibility, project features, permissions 에서 **CI/CD**·**Pages** 켜기 |
+| Build → Pipelines 가 비어 있음 | 푸시한 브랜치가 기본 브랜치가 아니거나, 빈 프로젝트에 첫 브랜치를 올릴 때 파이프라인이 안 만들어짐 | **Run pipeline**(파이프라인 실행)으로 브랜치를 골라 실행. 기본 브랜치는 Settings → Repository → Branch defaults |
+| 파이프라인이 *pending/stuck*, "no active runners" | 이 프로젝트가 쓸 수 있는 실행기(runner)가 없음 | Settings → CI/CD → Runners 에서 Instance(공유) runner 켜기. 없으면 운영 측에 요청. 태그가 필요한 runner 면 job 에 `tags:` 추가 |
+| 실행됐다가 실패 | `node:22` 이미지를 못 받거나 `npm ci`·휠 내려받기 실패(외부망 차단) | job 로그 확인. 내부 미러 이미지·npm 레지스트리 주소 또는 `vendor/pyodide/` 사용 |
+
 ## AI 연결 (선택)
 
 **설정(#/settings)**에서 OpenAI 호환 주소·모델·키를 넣으면 켜집니다.

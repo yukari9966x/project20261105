@@ -8,6 +8,11 @@
 #  - 공개 범위: Pages 접근 제어를 켜면 로그인 화면으로 넘어가 다른 사이트가 데이터 JSON 을 가져갈 수 없으므로 공개로 둔다.
 #  - 실행기(runner)가 인터넷에 나갈 수 없으면 Pyodide·휠을 vendor/pyodide/ 에 넣어 커밋한다(scripts/copy-pyodide.ts 참고).
 #  - GitLab 버전과 상관없이 동작하도록 가장 오래된 방식(public/ 폴더)으로 쓴다.
+#
+# 실행기(runner) 조건: Docker 실행기(node:22 이미지를 받을 수 있어야 함), 태그 없는 job 실행 허용,
+#   외부 접속 registry.npmjs.org · cdn.jsdelivr.net · files.pythonhosted.org (api.osv.dev 는 없으면 경고만)
+#   공유 runner 에 태그가 필요하면 pages 잡에 tags: [태그] 를 추가한다.
+# 파이프라인이 안 보이면: Build → Pipelines → '파이프라인 실행'(Run pipeline) 으로 브랜치를 골라 직접 실행할 수 있다.
 pages:
   image: node:22
   variables:
@@ -22,5 +27,6 @@ pages:
     paths:
       - public
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule" # 매일 수집 (Pipeline schedules)
+    - if: $CI_PIPELINE_SOURCE == "web" # 화면의 '파이프라인 실행' 버튼 — 어느 브랜치든
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH # 기본 브랜치에 푸시
