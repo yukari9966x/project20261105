@@ -70,6 +70,10 @@
 html {
   -webkit-text-size-adjust: 100%;
 }
+/* 결과로 스크롤할 때 상단 고정 메뉴(.topbar)에 제목이 가려지지 않게 그 높이만큼 여유를 둔다 */
+.scroll-target {
+  scroll-margin-top: 76px;
+}
 body {
   margin: 0;
   background: var(--bg);

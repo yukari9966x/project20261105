@@ -147,7 +147,7 @@ export default function Ask({ route }: { route: Route }) {
         </form>
       </section>
 
-      <div ref={resultRef} className="stack-lg" aria-live="polite">
+      <div ref={resultRef} className="stack-lg scroll-target" aria-live="polite">
         {busy && (
           <div className="card row" role="status">
             <span className="spinner" />

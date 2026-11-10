@@ -41,6 +41,32 @@ export const NUMERIC_LABEL: Record<string, string> = {
   unit_unsupported_review: '단위 미지원 · 검토',
   value_changed_review: '값 변경 · 검토',
 };
+/** 값이 달라졌거나 검토가 필요한 수치 판정인지. '수치 동등'은 값이 그대로라는 뜻이라 변경으로 세지 않는다. */
+export const isNumericChange = (d: { status: string }): boolean => d.status !== 'numeric_equivalent';
+
+interface FactLike {
+  raw_value: string;
+  raw_unit: string;
+  operator: string;
+}
+/** '수치 동등' 가운데 표기(값·단위·이상/이하)까지 같은 것 — 바뀐 것이 전혀 없는 숫자. (500 mA → 0.5 A 처럼 표기만 바뀐 것은 false) */
+export function isSameNotation(d: { status: string; old_fact: FactLike | null; new_fact: FactLike | null }): boolean {
+  if (d.status !== 'numeric_equivalent' || !d.old_fact || !d.new_fact) return false;
+  return d.old_fact.raw_value === d.new_fact.raw_value && d.old_fact.raw_unit === d.new_fact.raw_unit && d.old_fact.operator === d.new_fact.operator;
+}
+
+/** 변경대조표 한 줄에 붙일 수치 판정 딱지 — 표기까지 같은 숫자는 빼고, 같은 판정은 '강화 ×4' 로 묶는다. */
+export function numericBadges(deltas: { status: string; old_fact: FactLike | null; new_fact: FactLike | null }[]): { status: string; count: number }[] {
+  const out: { status: string; count: number }[] = [];
+  for (const d of deltas) {
+    if (isSameNotation(d)) continue;
+    const hit = out.find((b) => b.status === d.status);
+    if (hit) hit.count++;
+    else out.push({ status: d.status, count: 1 });
+  }
+  return out;
+}
+
 export const NUMERIC_TONE: Record<string, string> = {
   numeric_equivalent: 'ok',
   tightened: 'bad',

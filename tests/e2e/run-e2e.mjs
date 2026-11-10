@@ -88,7 +88,17 @@ page.on('request', (r) => {
   const u = new URL(r.url());
   if (!['data:', 'blob:'].includes(u.protocol) && u.origin !== origin) foreign.add(u.origin);
 });
-const shot = async (name, full = false) => SHOTS && (mkdirSync(SHOTS, { recursive: true }), await page.screenshot({ path: join(SHOTS, name), fullPage: full }));
+// 결과로 부드럽게 스크롤하는 도중에 찍으면 화면이 어긋나 보이므로, 스크롤이 멈춘 뒤에 찍는다.
+async function settle(p) {
+  let last = -1;
+  for (let i = 0; i < 20; i++) {
+    const y = await p.evaluate(() => Math.round(window.scrollY));
+    if (y === last) return;
+    last = y;
+    await p.waitForTimeout(150);
+  }
+}
+const shot = async (name, full = false) => SHOTS && (mkdirSync(SHOTS, { recursive: true }), await settle(page), await page.screenshot({ path: join(SHOTS, name), fullPage: full }));
 
 console.log(`E2E: ${base}`);
 
@@ -217,11 +227,11 @@ await step('휴대폰 폭(390px) — 하단 탭·가로 스크롤 없음', async
   }
   await p.goto(base + '#/');
   if (!(await p.locator('.tabbar').isVisible())) throw new Error('하단 탭 없음');
-  if (SHOTS) await p.screenshot({ path: join(SHOTS, '07_mobile_home.png') });
+  if (SHOTS) (await settle(p), await p.screenshot({ path: join(SHOTS, '07_mobile_home.png') }));
   await p.locator('#ask-input').fill('보조배터리 리콜 있었어?');
   await p.getByRole('button', { name: '물어보기' }).click();
   await p.getByText('이렇게 이해했어요').waitFor({ timeout: 60000 });
-  if (SHOTS) await p.screenshot({ path: join(SHOTS, '08_mobile_answer.png') });
+  if (SHOTS) (await settle(p), await p.screenshot({ path: join(SHOTS, '08_mobile_answer.png') }));
   // 휴대폰에서 변경체크 결과 화면도 가로로 넘치지 않아야 한다
   await p.goto(base + '#/diff');
   await p.getByRole('button', { name: /가정용 전기기기 안전 가상규정/ }).click();
@@ -231,7 +241,7 @@ await step('휴대폰 폭(390px) — 하단 탭·가로 스크롤 없음', async
   await p.waitForTimeout(500);
   const over = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   if (over > 1) throw new Error(`#/diff 결과: 가로 넘침 ${over}px`);
-  if (SHOTS) await p.screenshot({ path: join(SHOTS, '09_mobile_diff.png') });
+  if (SHOTS) (await settle(p), await p.screenshot({ path: join(SHOTS, '09_mobile_diff.png') }));
   await m.close();
 });
 

@@ -19,6 +19,9 @@ import {
   REVIEW_TONE,
   SEMANTIC_LABEL,
   SEMANTIC_TONE,
+  isNumericChange,
+  isSameNotation,
+  numericBadges,
 } from './diffLabels';
 
 type Filter = 'changed' | 'all' | 'added' | 'deleted' | 'numeric' | 'dates' | 'same' | 'evidence';
@@ -184,6 +187,7 @@ export default function DiffResult({ view, onView }: { view: AnalysisView; onVie
   const [msg, setMsg] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
   const [llmProgress, setLlmProgress] = useState<[number, number] | null>(null);
+  const [showSameNumbers, setShowSameNumbers] = useState(false);
 
   const ch = view.changes;
   const counts = useMemo(() => {
@@ -192,13 +196,15 @@ export default function DiffResult({ view, onView }: { view: AnalysisView; onVie
       if (x.semantic_status === 'changed' || x.semantic_status === 'unresolved') c.changed++;
       if (x.semantic_status === 'addition_candidate') c.added++;
       if (x.semantic_status === 'deletion_candidate') c.deleted++;
-      if (x.numeric_deltas.length) c.numeric++;
+      if (x.numeric_deltas.some(isNumericChange)) c.numeric++;
       if (x.date_deltas.length) c.dates++;
       if (x.semantic_status === 'unchanged' || x.semantic_status === 'format_only') c.same++;
       if (x.verification_status !== 'valid') c.evidence++;
     }
     return c;
   }, [ch]);
+  /** 수치·기한 표에서 기본으로 접어 두는 '값·표기가 모두 그대로인 숫자' 건수 */
+  const sameNumbers = useMemo(() => ch.reduce((n, x) => n + x.numeric_deltas.filter(isSameNotation).length, 0), [ch]);
 
   const visible = useMemo(() => {
     const t = text.trim();
@@ -208,7 +214,7 @@ export default function DiffResult({ view, onView }: { view: AnalysisView; onVie
         (filter === 'changed' && ['changed', 'unresolved', 'addition_candidate', 'deletion_candidate'].includes(x.semantic_status)) ||
         (filter === 'added' && x.semantic_status === 'addition_candidate') ||
         (filter === 'deleted' && x.semantic_status === 'deletion_candidate') ||
-        (filter === 'numeric' && x.numeric_deltas.length > 0) ||
+        (filter === 'numeric' && x.numeric_deltas.some(isNumericChange)) ||
         (filter === 'dates' && x.date_deltas.length > 0) ||
         (filter === 'same' && (x.semantic_status === 'unchanged' || x.semantic_status === 'format_only')) ||
         (filter === 'evidence' && x.verification_status !== 'valid');
@@ -409,9 +415,10 @@ export default function DiffResult({ view, onView }: { view: AnalysisView; onVie
                           {FLAG_LABEL[f]}
                         </span>
                       ))}
-                      {x.numeric_deltas.map((d, i) => (
-                        <span key={i} className={`badge ${NUMERIC_TONE[d.status] ?? 'outline'}`}>
-                          {NUMERIC_LABEL[d.status] ?? d.status}
+                      {numericBadges(x.numeric_deltas).map((b) => (
+                        <span key={b.status} className={`badge ${NUMERIC_TONE[b.status] ?? 'outline'}`}>
+                          {NUMERIC_LABEL[b.status] ?? b.status}
+                          {b.count > 1 ? ` ×${b.count}` : ''}
                         </span>
                       ))}
                       {x.date_deltas.length > 0 && <span className="badge warn">기한</span>}
@@ -436,6 +443,12 @@ export default function DiffResult({ view, onView }: { view: AnalysisView; onVie
       {tab === 'numbers' && (
         <section className="stack" role="tabpanel">
           <h3>수치·단위 비교</h3>
+          {sameNumbers > 0 && (
+            <label className="small muted" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input type="checkbox" checked={showSameNumbers} onChange={(e) => setShowSameNumbers(e.target.checked)} />
+              값과 표기가 모두 그대로인 숫자 {sameNumbers}건도 보기 (기본은 달라졌거나 단위 표기가 바뀐 것만)
+            </label>
+          )}
           <div className="table-wrap">
             <table className="table">
               <thead>
@@ -451,6 +464,7 @@ export default function DiffResult({ view, onView }: { view: AnalysisView; onVie
               <tbody>
                 {ch.flatMap((x) =>
                   x.numeric_deltas.map((d, i) => {
+                    if (!showSameNumbers && isSameNotation(d)) return null;
                     const a = aln.get(x.alignment_id);
                     return (
                       <tr key={`${x.id}-${i}`}>

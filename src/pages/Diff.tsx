@@ -252,7 +252,7 @@ export default function Diff() {
         )}
       </section>
 
-      <div ref={resultRef}>{view && <DiffResult view={view} onView={setView} />}</div>
+      <div ref={resultRef} className="scroll-target">{view && <DiffResult view={view} onView={setView} />}</div>
     </div>
   );
 }
