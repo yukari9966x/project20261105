@@ -37,7 +37,7 @@ function Diagram() {
         </marker>
       </defs>
       {box(20, 20, 220, 64, '공공데이터포털 · 제품안전 API', 'KS 목록 · KC · 리콜', 'soft')}
-      {box(300, 20, 440, 64, 'CI · 하루 1번 (06:00 KST)', '수집 → 색인 생성 → 빌드 → 배포 · 서비스키는 CI 비밀변수에만')}
+      {box(300, 20, 440, 64, 'CI · 하루 1번 (새벽 예약)', '수집 → 색인 생성 → 빌드 → 배포 · 서비스키는 CI 비밀변수에만')}
       {arrow(240, 52, 298, 52)}
       <rect x={20} y={120} width={560} height={110} rx={12} fill="none" stroke="var(--line-2)" strokeWidth={1.2} />
       <text x={34} y={142} fontSize="12.5" fontWeight="700" fill="var(--ink-2)">

@@ -5,6 +5,8 @@
  * 환경변수
  *   SAFETYKOREA_AUTH_KEY     서비스 ID (HTTP 헤더 AuthKey). CI 비밀변수에만 둔다. 사이트에는 절대 들어가지 않는다.
  *   PUBLIC_SITE_URL          배포된 사이트 주소. 여기 /data/v1 의 API 수집분을 '직전 스냅샷'으로 이어받는다.
+ *                            공백·쉼표로 여러 개를 적으면 앞에서부터 시도한다. http(s) 주소가 아닌 값은 건너뛴다
+ *                            (Pages 가 꺼진 GitLab 은 $CI_PAGES_URL 이 비어 "/" 만 넘어온다 → 다음 주소인 GitHub Pages 사용).
  *   SAFETYKOREA_API_BASE     기본 https://www.safetykorea.kr/openapi/api/
  *   SAFETY_BACKFILL_DAYS     첫 수집 때 리콜을 거슬러 받을 날수 (기본 365)
  *   SAFETY_KC_BACKFILL_DAYS  첫 수집 때 KC 인증을 거슬러 받을 날수 (기본 30)
@@ -28,7 +30,7 @@ const OUT = process.env.SAFETY_SNAPSHOT_PATH ? resolve(process.env.SAFETY_SNAPSH
 const env = (k: string, d = '') => (process.env[k] ?? '').trim() || d;
 const KEY = env('SAFETYKOREA_AUTH_KEY') || env('SAFETY_API_KEY');
 const BASE = env('SAFETYKOREA_API_BASE', 'https://www.safetykorea.kr/openapi/api/');
-const SITE = env('PUBLIC_SITE_URL');
+const SITES = siteUrls(env('PUBLIC_SITE_URL'));
 const BACKFILL = Number(env('SAFETY_BACKFILL_DAYS', '365'));
 const KC_BACKFILL = Number(env('SAFETY_KC_BACKFILL_DAYS', '30'));
 const OVERLAP = Number(env('SAFETY_OVERLAP_DAYS', '7'));
@@ -43,6 +45,14 @@ export interface Snapshot {
   kc: KcRecord[];
   recalls: RecallRecord[];
   log: string[];
+}
+
+/** PUBLIC_SITE_URL 값에서 쓸 수 있는 사이트 주소만 고른다 (끝에 '/' 를 붙여 돌려줌) */
+export function siteUrls(value: string): string[] {
+  return value
+    .split(/[\s,]+/)
+    .filter((u) => /^https?:\/\/[^/]+/i.test(u))
+    .map((u) => (u.endsWith('/') ? u : u + '/'));
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -61,16 +71,15 @@ async function getJson(url: string, headers: Record<string, string> = {}, timeou
 
 /** 직전 스냅샷: 배포된 사이트의 /data/v1 에서 API 수집분만 골라 온다 (없으면 로컬 파일) */
 async function loadPrevious(log: string[]): Promise<{ kc: KcRecord[]; recalls: RecallRecord[]; fetchedAt: string | null }> {
-  if (SITE) {
+  for (const base of SITES) {
     try {
-      const base = SITE.endsWith('/') ? SITE : SITE + '/';
       const meta = (await getJson(base + 'data/v1/meta.json')) as Meta;
       const kc = ((await getJson(base + 'data/v1/kc.json')) as { records: KcRecord[] }).records.filter((r) => r.src === SRC.api);
       const recalls = ((await getJson(base + 'data/v1/recall.json')) as { records: RecallRecord[] }).records.filter((r) => r.src === SRC.api);
-      log.push(`직전 스냅샷(배포 사이트): KC ${kc.length}건, 리콜 ${recalls.length}건, 수집 ${meta.api?.fetchedAt ?? '없음'}`);
+      log.push(`직전 스냅샷(배포 사이트 ${base}): API 수집분 KC ${kc.length}건, 리콜 ${recalls.length}건, 수집 ${meta.api?.fetchedAt ?? '없음'}`);
       return { kc, recalls, fetchedAt: meta.api?.fetchedAt ?? null };
     } catch (err) {
-      log.push(`직전 스냅샷을 사이트에서 못 받음: ${String(err)}`);
+      log.push(`직전 스냅샷을 ${base} 에서 못 받음: ${String(err)}`);
     }
   }
   if (existsSync(OUT)) {

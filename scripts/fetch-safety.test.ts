@@ -23,6 +23,10 @@ beforeAll(async () => {
       const d = u.searchParams.get('conditionValue') ?? '';
       return send({ resultCode: '2000', resultData: [{ certNum: `ZZ${d}-0001`, certState: '적합', certDate: d, signDate: d, productName: '전기스토브', modelName: 'X-1' }] });
     }
+    // 배포된 사이트(직전 스냅샷)인 척하는 경로
+    if (u.pathname === '/site/data/v1/meta.json') return send({ api: { status: 'ok', fetchedAt: '2026-11-08T21:00:00.000Z' } });
+    if (u.pathname === '/site/data/v1/kc.json') return send({ records: [{ certNum: 'SITE-1', src: 'api:safetykorea' }, { certNum: 'FILE-1', src: 'file:15040703' }] });
+    if (u.pathname === '/site/data/v1/recall.json') return send({ records: [{ id: 'dom-a-1', src: 'api:safetykorea' }] });
     res.writeHead(404).end();
   });
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', () => r()));
@@ -59,6 +63,30 @@ describe('fetch-safety (CI 수집)', () => {
     expect(s.kc.length).toBeGreaterThanOrEqual(2); // 오늘·어제 등록일
     const saved = JSON.parse(readFileSync(process.env.SAFETY_SNAPSHOT_PATH!, 'utf8'));
     expect(saved.fetchedAt).toBeTruthy();
+  });
+
+  it('사이트 주소가 비어 "/" 만 오면(Pages 가 꺼진 GitLab) 건너뛰고 다음 주소의 직전 스냅샷을 이어받는다', async () => {
+    const site = base.replace('/openapi/api/', '/site');
+    process.env.PUBLIC_SITE_URL = `/ ${site}`;
+    const { run, siteUrls } = await import('./fetch-safety');
+    expect(siteUrls('/')).toEqual([]);
+    expect(siteUrls('/ https://a.example/x , http://b.example/y/')).toEqual(['https://a.example/x/', 'http://b.example/y/']);
+    const s = await run();
+    expect(s.status).toBe('stale'); // 키는 없지만 이어받은 수집분이 있음
+    expect(s.fetchedAt).toBe('2026-11-08T21:00:00.000Z');
+    expect(s.kc.map((r) => r.certNum)).toEqual(['SITE-1']); // 파일데이터(FILE-1)는 이어받지 않음
+    expect(s.recalls).toHaveLength(1);
+    expect(s.log.join('\n')).toContain('직전 스냅샷(배포 사이트');
+    expect(s.log.join('\n')).not.toContain('못 받음');
+  });
+
+  it('앞 주소가 응답하지 않으면 기록을 남기고 다음 주소로 넘어간다', async () => {
+    const site = base.replace('/openapi/api/', '/site');
+    process.env.PUBLIC_SITE_URL = `${base.replace('/openapi/api/', '/nowhere/')} ${site}`;
+    const { run } = await import('./fetch-safety');
+    const s = await run();
+    expect(s.kc.map((r) => r.certNum)).toEqual(['SITE-1']);
+    expect(s.log[0]).toContain('못 받음');
   });
 
   it('인증키 오류(4000)면 직전 스냅샷을 그대로 쓴다', async () => {

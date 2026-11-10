@@ -27,7 +27,7 @@
 
 ```mermaid
 flowchart LR
-  subgraph CI["CI · 하루 1번 (06:00 KST)"]
+  subgraph CI["CI · 하루 1번 (새벽 예약)"]
     F[fetch-safety.ts<br/>제품안전 Open API] --> B[build-index.ts<br/>색인·meta.json]
     B --> P[copy-pyodide.ts<br/>필요한 Pyodide만] --> V[vite build] --> S[check-size.ts<br/>100MB 검사]
   end
@@ -72,7 +72,7 @@ Open API는 제품안전정보센터가 발급하는 **서비스 ID**를 HTTP �
 
 1. [신청서](https://www.safetykorea.kr/release/openapi)를 작성해 safetykorea@korea.kr 로 보내 서비스 ID를 받습니다.
 2. 저장소 **Settings → Secrets and variables → Actions**에 `SAFETYKOREA_AUTH_KEY`로 넣습니다. (사이트에는 절대 들어가지 않습니다.)
-3. **Actions → 수집·빌드·배포 → Run workflow**(첫 수집 날수 `backfill_days`, 기본 365). 이후 매일 06:00에 자동 수집합니다.
+3. **Actions → 수집·빌드·배포 → Run workflow**(첫 수집 날수 `backfill_days`, 기본 365). 이후 매일 새벽(05:17 예약)에 자동 수집합니다. GitHub 예약 실행은 붐빌 때 몇 시간 늦게 시작될 수 있어(2026-11-06~10 실측 3~6시간), 화면의 기준 시각은 실제 생성 시각을 씁니다.
 
 키가 없거나 호출이 실패하면(인증키 오류 4000, IP 제한 4001 등) **직전 스냅샷(배포된 `/data/v1`)을 그대로** 쓰고, 화면에 그 기준 시각을 표시합니다. 모든 목록은 최대 1,000줄이라 날짜(공표일·등록일)로 하루씩 나눠 받습니다.
 
@@ -100,7 +100,7 @@ npm run preview
 
 | 명령 | 내용 |
 |---|---|
-| `npm test` | 단위 테스트 78건 — 한글 토크나이저·조사 처리, 의도 분류, 실제 데이터로 KS·KC·리콜 검색, 키 없음 답변, CSV·정규화, 모의 제품안전 API 수집(키 없음·성공·인증 오류 시 직전 스냅샷), 모의 OpenAI 호환 서버(도구 호출·키 전송 범위·함수 호출 미지원 대체), requirements.txt 와 사이트 포함 패키지 버전 일치, GitLab 용 묶음의 상대 경로 검사 |
+| `npm test` | 단위 테스트 87건 — 한글 토크나이저·조사 처리, 의도 분류, 실제 데이터로 KS·KC·리콜 검색, 키 없음 답변, CSV·정규화, 모의 제품안전 API 수집(키 없음·성공·인증 오류 시 직전 스냅샷), 모의 OpenAI 호환 서버(도구 호출·키 전송 범위·함수 호출 미지원 대체), requirements.txt 와 사이트 포함 패키지 버전 일치, GitLab 용 묶음의 상대 경로 검사, 내장 샘플 해시·줄바꿈 변환 검사, 수치 변경 집계 |
 | `npm run test:engine` | 변경체크 엔진 25건 (원본 엔진의 단위·회귀 테스트 이식 + 파이프라인·연결부) — `pip install -r engine/requirements.txt` 필요 |
 | `node scripts/smoke-pyodide.mjs --unittest` | **실제 Pyodide**에서 엔진 설치·샘플 4쌍(TXT·HWPX·PDF·DOCX) 대조·XLSX/DOCX 생성 + 엔진 테스트 25건 |
 | `npm run test:e2e` | Playwright 브라우저 종단 점검 13단계 (질문창·KC·KS·변경체크·내려받기·휴대폰 폭·콘솔 오류·외부 요청 없음). `SITE_DIR=폴더 SITE_PATH=/project20261105/` 로 GitLab 처럼 풀어 놓은 사이트를 하위 경로에서 점검 |
@@ -121,15 +121,17 @@ npm run preview
 
 ### 공공 GitLab Pages (이관)
 
+> **정부 AI 실험실 GitLab(gitlab.aigov.go.kr) 현황 (2026-11-06 확인)**: Pages 기능이 꺼져 있어 사이트 주소가 생기지 않습니다. 그래서 실험실 파이프라인(`SITE_SOURCE=build`, 내 PC 러너)이 수집·빌드한 결과를 **`pages` 작업의 아티팩트**로 받아 내 PC에서 띄워 시연합니다. 러너 켜기부터 녹화까지의 절차는 [실행방법.md](실행방법.md)에 있습니다. 아래는 Pages 가 켜진 GitLab 에서도 그대로 쓸 수 있는 일반 설명입니다.
+
 [`.gitlab-ci.yml`](.gitlab-ci.yml)은 **Windows(PowerShell)·Linux 실행기 어디서나** 돌도록 두 셸에 공통인 명령(`curl`·`tar`·`npm`)만 씁니다. 사이트를 만드는 방법은 CI/CD 변수 `SITE_SOURCE`로 고릅니다.
 
 | 방식 | 하는 일 | 실행기에 필요한 것 |
 |---|---|---|
-| **기본** (`SITE_SOURCE` 없음) | GitHub Actions가 매일 06:00 빌드해 게시한 `site.tar.gz`(16MB)를 받아 그대로 Pages 에 올림 | `curl`·`tar`(Windows 10·Server 2019 이상 기본 포함), `yukari9966x.github.io` 로 나가는 인터넷. **Node.js 불필요** |
+| **기본** (`SITE_SOURCE` 없음) | GitHub Actions가 매일 새벽 빌드해 게시한 `site.tar.gz`(16MB)를 받아 그대로 Pages 에 올림 | `curl`·`tar`(Windows 10·Server 2019 이상 기본 포함), `yukari9966x.github.io` 로 나가는 인터넷. **Node.js 불필요** |
 | `SITE_SOURCE=build` | 이 GitLab 에서 수집·색인·빌드까지 (GitHub Actions 와 같은 단계) | Node.js 22, 외부 접속(registry.npmjs.org·cdn.jsdelivr.net·files.pythonhosted.org) |
 
 - 처음 한 번: **Build → Pipelines → Run pipeline**(파이프라인 실행) → 브랜치 선택 → 실행. 잡 순서는 `site:download`(또는 `site:build`) → `pages`.
-- 매일 갱신: **Build → Pipeline schedules**에 매일 07:00(Asia/Seoul) — GitHub 빌드(06:00) 뒤에 받도록.
+- 매일 갱신: **Build → Pipeline schedules**에 매일 13:00(Asia/Seoul) — GitHub 빌드(새벽 예약, 늦으면 오전 중) 뒤에 받도록.
 - 서비스키(`SITE_SOURCE=build` 일 때만): **Settings → CI/CD → Variables**에 `SAFETYKOREA_AUTH_KEY` (masked·protected)
 - 경로: GitHub·GitLab 모두 상대 경로(`./`)로 빌드한 같은 파일이라, GitLab Pages 주소가 하위 경로(`…/project20261105/`)든 고유 도메인의 맨 위(`/`)든 그대로 열립니다. (`npm run pack-site` 가 절대 경로 빌드는 묶지 않습니다)
 - 정부 AI 실험실 GitLab 은 푸시할 때 보안 검사(Gitleaks·Semgrep·OSV-Scanner·Trivy·Syft)를 하고, 취약한 의존성이 있으면 푸시를 거부합니다. 푸시 전에 `npm run check:vulns` 로 같은 DB 를 미리 확인하세요. Python 패키지를 올릴 때는 `engine/requirements.txt` 와 `scripts/lib/pyodide-packages.ts` 를 함께 고칩니다(테스트가 두 곳의 버전이 같은지 확인).
@@ -144,6 +146,7 @@ npm run preview
 | 파이프라인이 *pending/stuck*, "no active runners" | 이 프로젝트가 쓸 수 있는 실행기(runner)가 없음 | Settings → CI/CD → Runners 에서 Instance(공유) runner 켜기. 없으면 운영 측에 요청. 태그가 필요한 runner 면 job 에 `tags:` 추가 |
 | `'npm' 용어는 cmdlet…로 인식되지 않습니다` | Node.js 가 없는 Windows(PowerShell) 실행기에서 `SITE_SOURCE=build` 로 돌림 | `SITE_SOURCE` 변수를 지우고 기본 방식으로 실행 (또는 실행기에 Node.js 22 설치 후 runner 서비스 재시작) |
 | `site:download` 에서 curl 실패 | 실행기가 인터넷(github.io)에 나갈 수 없음 | 운영 측에 github.io 접속 허용 요청, 또는 빌드 결과물을 저장소에 넣어 올리는 방식으로 전환 |
+| 빌드가 `내장 샘플 2쌍이 저장소 원본과 다릅니다` 로 멈춤 | `.gitattributes` 가 들어오기 전에 윈도우 Git 이 줄바꿈을 CRLF 로 바꿔 받아 둔 폴더 | 안내문대로 폴더를 새로 받거나 `git rm -r --cached -q .` → `git reset --hard`. GitLab 러너는 `builds` 폴더 삭제 후 재실행 |
 | `'curl'`(또는 `'tar'`) 용어는 cmdlet…로 인식되지 않습니다 | Windows 10 1803·Server 2019 보다 오래된 실행기 | 실행기를 최신 Windows 로 바꾸거나 운영 측에 curl·tar 설치 요청 |
 | Pages 주소에서 빈 화면·파일 404 | 2026-11-05 12시(UTC) 이전 묶음(절대 경로 빌드)을 받음 | GitHub Actions 최신 실행이 끝난 뒤 **Run pipeline** 다시 실행 |
 
@@ -180,7 +183,7 @@ npm run preview
 | 서버가 없어 키를 숨길 수 없음 | 핵심 기능은 키 없이 동작. AI는 사용자 키·기관 LLM |
 | 실시간 조회가 아님(최대 하루 늦음) | 모든 카드에 기준 시각과 원문·현재 상태 링크 |
 | 제품안전 Open API 서비스키 발급 전 | 공공데이터포털 파일데이터(2019~2022)로 동작, 키 등록 즉시 CI가 최신 자료를 더함 |
-| Pyodide 첫 로딩 | 변경체크 화면에 들어갈 때만 로딩(로컬 측정 약 6초), 진행률 표시 |
+| Pyodide 첫 로딩·속도 | 변경체크 화면에 들어갈 때만 로딩(약 5초), 진행률 표시. 조항 300개 문서 쌍(각 35KB) 실측: 대조 약 1초, XLSX 약 2초, DOCX 약 5초 (Chromium, 2026-11-10) |
 | 용량 한도(GitLab 기본 100MB) | 필요한 Pyodide 패키지만, 빌드마다 총용량 검사(현재 48.6MB) |
 | OCR 없음 | 스캔본 PDF는 대조 불가 — 화면에 안내 |
 | 구형 HWP | HWPX·DOCX·PDF로 저장 후 사용 |
@@ -201,14 +204,16 @@ npm run preview
 ├─ scripts/
 │  ├─ fetch-safety.ts            # 제품안전 Open API 수집(CI 전용)
 │  ├─ build-index.ts             # 색인·meta.json → public/data/v1 (빌드 때 dist/data/v1)
-│  ├─ copy-pyodide.ts            # 필요한 Pyodide 파일만 복사(sha256 검증) + 엔진·샘플 묶음
+│  ├─ copy-pyodide.ts            # 필요한 Pyodide 파일만 복사(sha256 검증) + 엔진·샘플 묶음(내장 샘플 해시 확인)
 │  ├─ check-size.ts              # 총용량 100MB 넘으면 빌드 실패
 │  ├─ check-vulns.ts             # 의존성 취약점 검사(OSV) — 정부 GitLab 푸시 전에
 │  ├─ pack-site.ts               # 빌드 결과를 site.tar.gz 로 (GitLab 이 Node.js 없이 받아 씀)
 │  └─ smoke-pyodide.mjs          # 실제 Pyodide 에서 엔진 설치·실행 점검
 ├─ tests/e2e/run-e2e.mjs         # 브라우저 종단 점검
 ├─ .github/workflows/deploy.yml  # 예약 수집 + 빌드 + Pages 배포
-├─ .gitlab-ci.yml                # 이관용(같은 단계)
+├─ .gitlab-ci.yml                # 공공 GitLab 용 (받아 올리기 / 직접 빌드)
+├─ 실행방법.md                    # 정부 AI 실험실 GitLab 에서 빌드·시연하는 절차(러너·아티팩트·녹화)
+├─ .gitattributes                # 줄바꿈 변환 금지 — 윈도우에서 받아도 샘플·원본 데이터가 그대로
 └─ vite.config.ts                # base: './' (상대 경로 — 어느 Pages 주소에서도 동작)
 ```
 

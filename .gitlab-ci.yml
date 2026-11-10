@@ -2,9 +2,9 @@
 # 스크립트는 두 셸에서 똑같이 도는 명령(curl·tar·npm)만 쓴다. (bash 의 rm -rf·&&·$변수 는 PowerShell 에서 안 됨)
 #
 # 사이트를 만드는 방법은 두 가지이고, CI/CD 변수 SITE_SOURCE 로 고른다.
-#  1) 기본(SITE_SOURCE 없음): GitHub Actions 가 매일 06:00 빌드해 GitHub Pages 에 올린 site.tar.gz 를 받아 그대로 올린다.
+#  1) 기본(SITE_SOURCE 없음): GitHub Actions 가 매일 새벽 빌드해 GitHub Pages 에 올린 site.tar.gz 를 받아 그대로 올린다.
 #     → 실행기에 Node.js 가 없어도 된다. 필요한 것: curl·tar(Windows 10 이상·Server 2019 이상 기본 포함)와
-#       yukari9966x.github.io 로 나가는 인터넷. 매일 갱신하려면 Build → Pipeline schedules 에 07:00(Asia/Seoul) 추가.
+#       yukari9966x.github.io 로 나가는 인터넷. 매일 갱신하려면 Build → Pipeline schedules 에 13:00(Asia/Seoul) 추가(GitHub 예약 실행이 오전까지 밀릴 수 있음).
 #  2) SITE_SOURCE=build: 이 GitLab 에서 수집·색인·빌드까지 한다 (GitHub Actions 와 같은 단계).
 #     → 실행기에 Node.js 22 와 외부 접속(registry.npmjs.org·cdn.jsdelivr.net·files.pythonhosted.org)이 필요.
 #       서비스키는 Settings → CI/CD → Variables 에 SAFETYKOREA_AUTH_KEY (masked·protected).
@@ -40,7 +40,8 @@ site:build:
   stage: prepare
   image: node:22 # Docker 실행기에서만 쓰임 (shell 실행기는 설치된 Node.js 를 씀)
   variables:
-    PUBLIC_SITE_URL: "$CI_PAGES_URL/"
+    # 직전 스냅샷을 이어받을 곳(앞에서부터 시도). Pages 가 꺼져 있으면 $CI_PAGES_URL 이 비어 "/" 가 되고, 그 값은 건너뛴다.
+    PUBLIC_SITE_URL: "$CI_PAGES_URL/ https://yukari9966x.github.io/project20261105/"
   script:
     - npm ci
     - npm run check:vulns # 의존성 취약점(OSV). 외부망이 막혀 있으면 경고만 하고 넘어감
