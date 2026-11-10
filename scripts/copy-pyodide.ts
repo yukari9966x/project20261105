@@ -4,7 +4,7 @@
  *  1) node_modules/pyodide 의 코어 파일(wasm·stdlib·로더)
  *  2) Pyodide 내장 패키지 중 엔진에 필요한 것만(lxml·pydantic·micropip …) — CDN 에서 받아 sha256 검증
  *  3) micropip 로 설치할 순수 Python 휠(pypdf·python-docx·openpyxl·et-xmlfile·defusedxml) — PyPI 에서 받아 sha256 검증
- *  4) engine/kats_diff 파이썬 소스 묶음(JSON) + 내장 샘플 4쌍
+ *  4) engine/kats_diff 파이썬 소스 묶음(JSON) + 내장 샘플 4쌍(저장소 원본과 같은지 SHA-256 확인 — lib/samples.ts)
  *
  * 결과: public/pyodide/, public/engine/, public/samples/ (빌드 때 dist/ 로 복사됨)
  * 인터넷이 막힌 CI(기관 내부망)에서는 vendor/pyodide/ 에 같은 파일을 미리 넣어 두면 내려받지 않는다.
@@ -14,6 +14,7 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statS
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BUILTIN_PACKAGES, PURE_WHEELS, canon } from './lib/pyodide-packages';
+import { SAMPLE_PAIRS, checkSamples, sampleProblemMessage } from './lib/samples';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PYODIDE_PKG = join(ROOT, 'node_modules', 'pyodide');
@@ -24,41 +25,6 @@ const CACHE = join(ROOT, '.cache', 'pyodide');
 const VENDOR = join(ROOT, 'vendor', 'pyodide');
 
 const CORE_FILES = ['pyodide.mjs', 'pyodide.asm.mjs', 'pyodide.asm.wasm', 'python_stdlib.zip'];
-
-const SAMPLE_PAIRS = [
-  {
-    id: 'pair1_kr_appliance',
-    title: '가정용 전기기기 안전 가상규정 (TXT, 한국어)',
-    old: 'old_appliance_2023_v1.txt',
-    new: 'new_appliance_2026_v2.txt',
-    country: '대한민국(가상)',
-    product: '가정용 전기기기',
-  },
-  {
-    id: 'pair2_kr_lighting_hwpx',
-    title: 'LED 조명기기 가상규정 (HWPX, 한국어)',
-    old: 'old_lighting_2022_v1.hwpx',
-    new: 'new_lighting_2026_v2.hwpx',
-    country: '대한민국(가상)',
-    product: 'LED 조명기기',
-  },
-  {
-    id: 'pair3_en_battery',
-    title: 'Battery safety synthetic regulation (PDF, 영어)',
-    old: 'old_battery_2022_revA.pdf',
-    new: 'new_battery_2026_revB.pdf',
-    country: 'EU(가상)',
-    product: '휴대용 배터리',
-  },
-  {
-    id: 'pair4_en_machinery',
-    title: 'Machinery safety synthetic regulation (DOCX, 영어)',
-    old: 'old_machinery_2021_v1.docx',
-    new: 'new_machinery_2026_v2.docx',
-    country: '미국(가상)',
-    product: '산업용 기계',
-  },
-];
 
 function sha256(buf: Buffer | Uint8Array | string): string {
   return createHash('sha256').update(buf).digest('hex');
@@ -105,6 +71,9 @@ function listFiles(dir: string): string[] {
 
 async function main() {
   if (!existsSync(join(PYODIDE_PKG, 'package.json'))) throw new Error('node_modules/pyodide 가 없습니다. npm ci 를 먼저 실행하세요.');
+  // 엔진은 내장 샘플을 SHA-256 으로 알아본다. 저장소 원본과 다르면(윈도우 Git 의 줄바꿈 변환 등) 내려받기 전에 멈춘다.
+  const sampleProblems = checkSamples(ROOT);
+  if (sampleProblems.length) throw new Error(sampleProblemMessage(sampleProblems));
   const pyVersion: string = JSON.parse(readFileSync(join(PYODIDE_PKG, 'package.json'), 'utf8')).version;
   const lock = JSON.parse(readFileSync(join(PYODIDE_PKG, 'pyodide-lock.json'), 'utf8'));
 

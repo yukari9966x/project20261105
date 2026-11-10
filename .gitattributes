@@ -1,0 +1,17 @@
+# 받을 때 줄바꿈을 바꾸지 않는다 — 저장소에 든 바이트 그대로 받는다.
+#
+# 윈도우용 Git 은 설치 기본값(core.autocrlf=true)으로 LF 를 CRLF 로 바꿔 받는데, 그러면
+#  - 변경체크 내장 샘플(가전 TXT·배터리 PDF)이 SHA-256 으로 대조하는 기록(fixture_registry.json)과 달라져
+#    화면에 "내장 샘플과 해시가 다른 문서"로 나오고,
+#  - 글자로만 된 PDF 는 안의 위치표가 어긋나며,
+#  - 공공데이터 원본 CSV(원래 CRLF)도 내려받은 그대로 두어야 한다.
+# 이 파일이 있으면 PC 의 Git 설정과 상관없이 같은 파일을 받는다 (빌드의 copy-pyodide 가 한 번 더 확인).
+* -text
+
+# 문서·압축·그림 파일은 글자 단위 비교(diff)도 하지 않는다
+*.pdf  binary
+*.hwpx binary
+*.docx binary
+*.xlsx binary
+*.gz   binary
+*.png  binary
